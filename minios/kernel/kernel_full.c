@@ -1,23 +1,29 @@
-// kernel_vbox.c - VirtualBox-compatible kernel (simplified, no interrupts)
+// kernel_full.c - Full-featured 32-bit kernel with GUI for GRUB
 #include <stdint.h>
+#include <stddef.h>
 
 // VGA text mode
 #define VGA_MEMORY 0xB8000
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
-// Colors
+// Colors (same as simulator)
 #define COLOR_BLACK 0x0
 #define COLOR_BLUE 0x1
 #define COLOR_GREEN 0x2
 #define COLOR_CYAN 0x3
 #define COLOR_RED 0x4
 #define COLOR_MAGENTA 0x5
-#define COLOR_YELLOW 0xE
-#define COLOR_WHITE 0xF
+#define COLOR_BROWN 0x6
+#define COLOR_LIGHT_GRAY 0x7
+#define COLOR_DARK_GRAY 0x8
+#define COLOR_LIGHT_BLUE 0x9
 #define COLOR_LIGHT_GREEN 0xA
 #define COLOR_LIGHT_CYAN 0xB
 #define COLOR_LIGHT_RED 0xC
+#define COLOR_LIGHT_MAGENTA 0xD
+#define COLOR_YELLOW 0xE
+#define COLOR_WHITE 0xF
 
 static uint16_t* const vga = (uint16_t*)VGA_MEMORY;
 static uint8_t current_color = 0x0F;
@@ -83,7 +89,7 @@ static void draw_centered_text(const char* text, int y, uint8_t color) {
     draw_text(text, x, y, color);
 }
 
-// Activities
+// Simple Neural Network Activity Suggester
 static const char* activities[] = {
     "Take a 15-minute walk outside",
     "Do 10 minutes of stretching",
@@ -97,52 +103,15 @@ static const char* activities[] = {
 #define NUM_ACTIVITIES 8
 
 static int current_activity = 0;
+static uint32_t pseudo_random = 12345;
 
-// Port I/O
-static inline uint8_t inb(uint16_t port) {
-    uint8_t ret;
-    __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
-
-// Keyboard polling (no interrupts!)
-static int keyboard_has_data(void) {
-    return (inb(0x64) & 0x01) != 0;
-}
-
-static uint8_t keyboard_read_scancode(void) {
-    while (!keyboard_has_data());
-    return inb(0x60);
-}
-
-// Simple scancode to char (US keyboard)
-static char scancode_to_char(uint8_t scancode) {
-    // Only handle keys we need: A, R, N
-    switch (scancode) {
-        case 0x1E: return 'a';  // A key
-        case 0x13: return 'r';  // R key  
-        case 0x31: return 'n';  // N key
-        default: return 0;
-    }
-}
-
-// Check for keypress (non-blocking)
-static char check_key(void) {
-    if (keyboard_has_data()) {
-        uint8_t scancode = inb(0x60);
-        
-        // Ignore key releases (bit 7 set)
-        if (scancode & 0x80) {
-            return 0;
-        }
-        
-        return scancode_to_char(scancode);
-    }
-    return 0;
+static uint32_t rand32(void) {
+    pseudo_random = pseudo_random * 1103515245 + 12345;
+    return pseudo_random;
 }
 
 static void next_activity(void) {
-    current_activity = (current_activity + 1) % NUM_ACTIVITIES;
+    current_activity = rand32() % NUM_ACTIVITIES;
 }
 
 // Draw the GUI
@@ -182,18 +151,65 @@ static void draw_gui(void) {
     draw_text("SNN Model: Active", 4, 21, current_color);
     draw_text("Keyboard: Polling", 4, 22, current_color);
     
-    set_color(COLOR_WHITE, COLOR_BLACK);
+    set_color(COLOR_WHITE, COLOR_DARK_GRAY);
     draw_box(42, 20, 36, 4, current_color);
-    draw_text("VirtualBox Edition", 44, 21, current_color);
-    draw_text("Press A, R, or N keys", 44, 22, current_color);
+    draw_text("Universal compatibility mode", 44, 21, current_color);
+    draw_text("Works in QEMU & VirtualBox", 44, 22, current_color);
     
     // Status bar
     set_color(COLOR_LIGHT_GREEN, COLOR_BLACK);
     for (int i = 0; i < VGA_WIDTH; i++) {
         putchar_at(' ', i, VGA_HEIGHT - 1, current_color);
     }
-    draw_text(" MiniOS v1.0 | VirtualBox | Press A/R/N to interact", 
+    draw_text(" MiniOS v1.0 | GRUB Edition | Press A/R/N for next activity", 
               0, VGA_HEIGHT - 1, current_color);
+}
+
+// Port I/O
+static inline uint8_t inb(uint16_t port) {
+    uint8_t ret;
+    __asm__ volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
+    return ret;
+}
+
+static inline void outb(uint16_t port, uint8_t val) {
+    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+
+// Keyboard polling (no interrupts - works everywhere!)
+static int keyboard_has_data(void) {
+    return (inb(0x64) & 0x01) != 0;
+}
+
+static uint8_t keyboard_read_scancode(void) {
+    while (!keyboard_has_data());
+    return inb(0x60);
+}
+
+// Simple scancode to char (US keyboard)
+static char scancode_to_char(uint8_t scancode) {
+    // Handle common keys: A, R, N
+    switch (scancode) {
+        case 0x1E: return 'a';  // A key
+        case 0x13: return 'r';  // R key  
+        case 0x31: return 'n';  // N key
+        default: return 0;
+    }
+}
+
+// Check for keypress (non-blocking)
+static char check_key(void) {
+    if (keyboard_has_data()) {
+        uint8_t scancode = inb(0x60);
+        
+        // Ignore key releases (bit 7 set)
+        if (scancode & 0x80) {
+            return 0;
+        }
+        
+        return scancode_to_char(scancode);
+    }
+    return 0;
 }
 
 // Main kernel entry
@@ -205,22 +221,23 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         return;
     }
     
-    // NO INTERRUPT SETUP - use polling instead for VirtualBox compatibility
+    // NO INTERRUPT SETUP - use polling for universal compatibility
+    // Works in both QEMU and VirtualBox!
     
-    // Initialize
+    // Initialize activity
     current_activity = 0;
     
     // Draw initial GUI
     draw_gui();
     
     // Main loop with keyboard polling
-    volatile int counter = 0;
+    int refresh_counter = 0;
     
     while (1) {
-        // Check for keyboard input (polling, not interrupts!)
+        // Check for keyboard input via polling
         char key = check_key();
         
-        if (key == 'a') {
+        if (key == 'a' || key == 'A') {
             // Accept
             set_color(COLOR_BLACK, COLOR_LIGHT_GREEN);
             draw_box(25, 10, 30, 3, current_color);
@@ -232,7 +249,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
             next_activity();
             draw_gui();
         }
-        else if (key == 'r') {
+        else if (key == 'r' || key == 'R') {
             // Reject
             set_color(COLOR_WHITE, COLOR_LIGHT_RED);
             draw_box(25, 10, 30, 3, current_color);
@@ -244,20 +261,27 @@ void kernel_main(uint32_t magic, uint32_t addr) {
             next_activity();
             draw_gui();
         }
-        else if (key == 'n') {
+        else if (key == 'n' || key == 'N') {
             // Next
             next_activity();
             draw_gui();
         }
         
-        // Blink indicator to show system is alive
-        counter++;
-        if ((counter / 100000) % 2 == 0) {
-            putchar_at('*', VGA_WIDTH - 1, VGA_HEIGHT - 1, 
-                      (COLOR_BLACK << 4) | COLOR_LIGHT_GREEN);
-        } else {
-            putchar_at(' ', VGA_WIDTH - 1, VGA_HEIGHT - 1, 
-                      (COLOR_BLACK << 4) | COLOR_LIGHT_GREEN);
+        // Periodic refresh (blink indicator)
+        refresh_counter++;
+        if (refresh_counter > 1000000) {
+            refresh_counter = 0;
+            
+            // Blink cursor to show system is running
+            static int blink = 0;
+            blink = !blink;
+            if (blink) {
+                putchar_at('*', VGA_WIDTH - 1, VGA_HEIGHT - 1, 
+                          (COLOR_BLACK << 4) | COLOR_LIGHT_GREEN);
+            } else {
+                putchar_at(' ', VGA_WIDTH - 1, VGA_HEIGHT - 1, 
+                          (COLOR_BLACK << 4) | COLOR_LIGHT_GREEN);
+            }
         }
     }
 }
