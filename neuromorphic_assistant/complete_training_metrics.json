@@ -1,0 +1,17 @@
+{
+  "collection_date": "2026-03-16T01:25:30.657698",
+  "source": "Training + HWiNFO64",
+  "accuracy_percent": 10.0,
+  "ram_mb": 228.4375,
+  "total_time_seconds": 510.5184836387634,
+  "avg_inference_ms": 2488.234519958496,
+  "gpu_allocated_mb": 2116.869696969697,
+  "gpu_reserved_mb": 2535.9151515151516,
+  "gpu_power_avg_w": 20.75151515151515,
+  "gpu_power_min_w": 20.0,
+  "gpu_power_max_w": 22.0,
+  "gpu_temp_avg_c": 50.13636363636363,
+  "gpu_temp_max_c": 51.0,
+  "total_energy_wh": 1.9079865319865317,
+  "gpu_type": "amd_directml"
+}

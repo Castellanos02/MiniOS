@@ -1,0 +1,80 @@
+{
+  "summary": {
+    "total_time_seconds": 510.5184836387634,
+    "total_energy_wh": 18.435389686955347,
+    "final_accuracy": 10.0,
+    "average_power_watts": 130.0,
+    "max_ram_mb": 228.4375,
+    "max_gpu_allocated_mb": 228.4375,
+    "gpu_type": "amd_directml",
+    "avg_inference_ms": 2488.234519958496
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "accuracy": 10.0,
+      "loss": -2.3965856469222824,
+      "time_seconds": 100.20032620429993,
+      "ram_mb": 200.4453125,
+      "gpu_allocated_mb": 200.4453125,
+      "gpu_reserved_mb": 4096,
+      "power_watts": 130.0,
+      "energy_wh": 3.618345112933053,
+      "temperature_c": 65
+    },
+    {
+      "epoch": 2,
+      "accuracy": 10.0,
+      "loss": -2.3965856469222824,
+      "time_seconds": 199.6775758266449,
+      "ram_mb": 208.38671875,
+      "gpu_allocated_mb": 208.38671875,
+      "gpu_reserved_mb": 4096,
+      "power_watts": 130.0,
+      "energy_wh": 7.210579127073288,
+      "temperature_c": 65
+    },
+    {
+      "epoch": 3,
+      "accuracy": 10.0,
+      "loss": -2.3965856469222824,
+      "time_seconds": 299.2223470211029,
+      "ram_mb": 215.93359375,
+      "gpu_allocated_mb": 215.93359375,
+      "gpu_reserved_mb": 4096,
+      "power_watts": 130.0,
+      "energy_wh": 10.805251420206494,
+      "temperature_c": 65
+    },
+    {
+      "epoch": 4,
+      "accuracy": 10.0,
+      "loss": -2.3965856469222824,
+      "time_seconds": 405.0653290748596,
+      "ram_mb": 221.6953125,
+      "gpu_allocated_mb": 221.6953125,
+      "gpu_reserved_mb": 4096,
+      "power_watts": 130.0,
+      "energy_wh": 14.627359105481041,
+      "temperature_c": 65
+    },
+    {
+      "epoch": 5,
+      "accuracy": 10.0,
+      "loss": -2.3965856469222824,
+      "time_seconds": 510.5184836387634,
+      "ram_mb": 228.4375,
+      "gpu_allocated_mb": 228.4375,
+      "gpu_reserved_mb": 4096,
+      "power_watts": 130.0,
+      "energy_wh": 18.435389686955347,
+      "temperature_c": 65
+    }
+  ],
+  "gpu_type": "amd_directml",
+  "inference_timing": {
+    "num_tests": 50,
+    "average_ms": 2488.234519958496,
+    "p95_ms": 2565.550756454468
+  }
+}
