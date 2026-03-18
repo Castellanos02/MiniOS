@@ -31,23 +31,28 @@ class QuickGPUMonitor:
         self.start_time = None
         
     def detect_gpu(self):
-        """Detect GPU quickly"""
-        try:
-            import torch_directml
-            if torch_directml.is_available():
-                print(f"✓ AMD GPU via DirectML")
-                return 'amd_directml'
-        except:
-            pass
+        """Detect GPU quickly - prioritize NVIDIA"""
         
+        # Try NVIDIA first
         try:
             import pynvml
             pynvml.nvmlInit()
             if pynvml.nvmlDeviceGetCount() > 0:
                 self.nvml = pynvml
                 self.handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-                print(f"✓ NVIDIA GPU")
+                gpu_name = pynvml.nvmlDeviceGetName(self.handle)
+                print(f"✓ NVIDIA GPU: {gpu_name}")
                 return 'nvidia'
+        except Exception as e:
+            pass
+        
+        # Try AMD DirectML
+        try:
+            import torch_directml
+            if torch_directml.is_available():
+                device_name = torch_directml.device_name(0)
+                print(f"✓ AMD GPU via DirectML: {device_name}")
+                return 'amd_directml'
         except:
             pass
         

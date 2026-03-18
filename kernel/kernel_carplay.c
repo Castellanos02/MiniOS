@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Use Case Neuromorphic SNN (replaces old ML system)
+#include "usecase_snn_weights.h"
+
 // =============================================================================
 // SIMPLIFIED ML & MEMORY TRACKING (from kernel_enhanced.c)
 // =============================================================================
@@ -19,6 +22,7 @@ typedef struct {
     uint8_t activity_prefs[20];
     uint8_t current_hour;    // 0-23
     uint8_t current_minute;  // 0-59
+    uint8_t day_of_week;     // 0=Mon, 6=Sun
 } MLContext;
 
 static MLContext g_ml = {0};
@@ -273,6 +277,11 @@ static void ml_update_context(uint32_t cycles, uint8_t idle) {
     g_ml.current_hour = (minutes / 60) % 24;
     g_ml.current_minute = minutes % 60;
     
+    // Calculate day of week (simple: 0=Mon, cycles from Monday 00:00)
+    uint32_t total_minutes = g_ml.cycles / 1000000;
+    uint32_t days = total_minutes / (24 * 60);
+    g_ml.day_of_week = days % 7;  // 0=Mon, 6=Sun
+    
     if (g_ml.current_hour >= 6 && g_ml.current_hour < 12) g_ml.time_segment = 0;
     else if (g_ml.current_hour >= 12 && g_ml.current_hour < 17) g_ml.time_segment = 1;
     else if (g_ml.current_hour >= 17 && g_ml.current_hour < 22) g_ml.time_segment = 2;
@@ -319,6 +328,68 @@ static uint8_t ml_suggest_activity(void) {
         }
     }
     return best;
+}
+
+// =============================================================================
+// NEUROMORPHIC SNN PROACTIVE SUGGESTIONS
+// =============================================================================
+
+// Get idle time until next calendar event
+static int get_idle_minutes_until_next_event(void) {
+    int current_mins = g_ml.current_hour * 60 + g_ml.current_minute;
+    int next_event_mins = 24 * 60;  // End of day default
+    
+    // Find next event
+    for (uint8_t i = 0; i < g_event_count; i++) {
+        int event_mins = g_events[i].hour * 60 + g_events[i].minute;
+        if (event_mins > current_mins && event_mins < next_event_mins) {
+            next_event_mins = event_mins;
+        }
+    }
+    
+    int idle_mins = next_event_mins - current_mins;
+    return (idle_mins > 0 && idle_mins < 240) ? idle_mins : 0;  // Max 4 hours
+}
+
+// Get neuromorphic SNN suggestion
+static const char* get_snn_suggestion_wrapper(int* out_activity_idx) {
+    // Calculate idle time
+    int idle_mins = get_idle_minutes_until_next_event();
+    
+    // Check if there's an upcoming meeting
+    int has_meeting = 0;
+    int current_mins = g_ml.current_hour * 60 + g_ml.current_minute;
+    for (uint8_t i = 0; i < g_event_count; i++) {
+        int event_mins = g_events[i].hour * 60 + g_events[i].minute;
+        if (event_mins > current_mins && event_mins < current_mins + 60) {
+            has_meeting = 1;
+            break;
+        }
+    }
+    
+    // Get SNN suggestion (using renamed function to avoid conflict)
+    const char* suggestion = get_snn_proactive_suggestion(
+        g_ml.current_hour,
+        g_ml.current_minute,
+        g_ml.day_of_week,
+        g_ml.energy_level,
+        g_ml.engagement,
+        idle_mins,
+        has_meeting,
+        (g_ml.total_accepts > 10) ? 10 : g_ml.total_accepts,
+        (g_ml.total_rejects > 10) ? 10 : g_ml.total_rejects
+    );
+    
+    // Find matching activity index (for calendar integration)
+    *out_activity_idx = 0;  // Default
+    for (int i = 0; i < UC_OUTPUT_SIZE; i++) {
+        if (suggestion == ACTIVITY_NAMES[i]) {
+            *out_activity_idx = i % NUM_ACTIVITIES;  // Map to existing activities
+            break;
+        }
+    }
+    
+    return suggestion;
 }
 
 static void ml_record_feedback(uint8_t idx, uint8_t accepted) {
@@ -660,8 +731,9 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     g_ml.engagement = 50;
     g_ml.current_hour = 8;      // Start at 8:30 AM
     g_ml.current_minute = 30;   // 30 min before first event
+    g_ml.day_of_week = 0;       // Monday (0=Mon, 6=Sun)
     
-    // IMPORTANT: Initialize cycles to match 8:30 AM
+    // IMPORTANT: Initialize cycles to match 8:30 AM on Monday
     // 8:30 AM = (8 * 60 + 30) = 510 minutes from midnight
     // 510 minutes * 1,000,000 cycles/minute = 510,000,000 cycles
     g_ml.cycles = 510000000;
@@ -892,11 +964,75 @@ void kernel_main(uint32_t magic, uint32_t addr) {
                     current_screen = SCREEN_HOME;
                     draw_home_screen(selected_app);
                 } else if (key == 'a') {  // Add AI suggestion
-                    uint8_t activity = ml_suggest_activity();
-                    // Add to next available hour
-                    uint8_t next_hour = (g_ml.current_hour + 1) % 24;
-                    add_suggestion_to_calendar(activity, next_hour, 0);
-                    draw_calendar_app(scroll_pos);
+                    // Use neuromorphic SNN for suggestion
+                    int activity_idx;
+                    const char* snn_suggestion = get_snn_suggestion_wrapper(&activity_idx);
+                    
+                    // Add to calendar with SNN suggestion text
+                    if (g_event_count < MAX_EVENTS) {
+                        uint8_t next_hour = (g_ml.current_hour + 1) % 24;
+                        
+                        g_events[g_event_count++] = (CalendarEvent){
+                            next_hour,
+                            0,
+                            15,
+                            snn_suggestion,  // Use SNN suggestion directly
+                            1,  // Is AI suggestion
+                            activity_idx % 6  // Map to category
+                        };
+                        
+                        draw_calendar_app(scroll_pos);
+                    }
+                }
+            }
+        }
+        
+        // =====================================================================
+        // FULLY PROACTIVE: Check for idle time every 15 minutes and suggest!
+        // =====================================================================
+        static uint8_t last_suggestion_minute = 255;  // Track when we last suggested
+        
+        // Check every 15 minutes (on the quarter hour: 0, 15, 30, 45)
+        if (g_ml.current_minute % 15 == 0 && g_ml.current_minute != last_suggestion_minute) {
+            last_suggestion_minute = g_ml.current_minute;
+            
+            // Calculate idle time
+            int idle_mins = get_idle_minutes_until_next_event();
+            
+            // PROACTIVE: If there's at least 15 minutes free, suggest something!
+            if (idle_mins >= 15 || idle_mins == 0) {  // 0 means no events = lots of free time!
+                // If no events at all, assume 3 hours free
+                if (idle_mins == 0) idle_mins = 180;
+                
+                // Get neuromorphic SNN suggestion
+                int activity_idx;
+                const char* snn_suggestion = get_snn_suggestion_wrapper(&activity_idx);
+                
+                // Add proactive suggestion to calendar
+                if (g_event_count < MAX_EVENTS) {
+                    // Add at current time + 5 minutes
+                    uint8_t suggest_hour = g_ml.current_hour;
+                    uint8_t suggest_minute = g_ml.current_minute + 5;
+                    
+                    if (suggest_minute >= 60) {
+                        suggest_minute -= 60;
+                        suggest_hour = (suggest_hour + 1) % 24;
+                    }
+                    
+                    // Add to calendar
+                    g_events[g_event_count++] = (CalendarEvent){
+                        suggest_hour,
+                        suggest_minute,
+                        15,  // 15 minute duration
+                        snn_suggestion,
+                        1,  // Is AI suggestion
+                        activity_idx % 6
+                    };
+                    
+                    // If on calendar screen, refresh it
+                    if (current_screen == SCREEN_CALENDAR) {
+                        draw_calendar_app(scroll_pos);
+                    }
                 }
             }
         }
