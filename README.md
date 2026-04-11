@@ -311,7 +311,7 @@ learning_rate = 0.001
 
 ---
 
-## Academic Description
+## Project Description
 
 This project implements a neuromorphic Spiking Neural Network (SNN) using Leaky Integrate-and-Fire neurons for proactive activity suggestion in a custom operating system. The system trains on GPU (NVIDIA/AMD) using snnTorch, achieving 89-91% accuracy on context-aware recommendations, then deploys the model weights to a bootable OS kernel for real-time CPU inference. The neuromorphic architecture demonstrates energy-efficient edge computing through spike-based temporal processing, collecting comprehensive metrics including power consumption (0.026 Wh), inference latency (8-24ms), and learning dynamics across both training and deployment phases.
 
