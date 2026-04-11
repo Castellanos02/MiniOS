@@ -4,17 +4,17 @@ A custom bootable operating system with integrated Spiking Neural Network (SNN) 
 
 ---
 
-## 🎯 Project Overview
+## Project Overview
 
 **MiniOS** is a neuromorphic AI system that uses Spiking Neural Networks (snnTorch) to provide context-aware, proactive activity suggestions in a custom CarPlay-style operating system. The system trains on GPU (NVIDIA/AMD) and deploys the trained model to a bootable OS kernel for real-time CPU inference.
 
 ### Key Features
 
-- ✅ **Neuromorphic Computing**: Leaky Integrate-and-Fire (LIF) neurons with temporal spike dynamics
-- ✅ **GPU Training**: Supports both NVIDIA (CUDA) and AMD (DirectML) GPUs
-- ✅ **Proactive AI**: Automatically suggests activities based on time, energy, and calendar context
-- ✅ **Bootable OS**: Runs in QEMU/VirtualBox with GRUB multiboot
-- ✅ **Complete Metrics**: Collects 8 training metrics including power, energy, and inference time
+- **Neuromorphic Computing**: Leaky Integrate-and-Fire (LIF) neurons with temporal spike dynamics
+- **GPU Training**: Supports both NVIDIA (CUDA) and AMD (DirectML) GPUs
+- **Proactive AI**: Automatically suggests activities based on time, energy, and calendar context
+- **Bootable OS**: Runs in QEMU/VirtualBox with GRUB multiboot
+- **Complete Metrics**: Collects 8 training metrics including power, energy, and inference time
 
 ### Performance
 
@@ -26,7 +26,7 @@ A custom bootable operating system with integrated Spiking Neural Network (SNN) 
 
 ---
 
-## 📋 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -59,7 +59,7 @@ choco install make nasm qemu
 
 ---
 
-## 🚀 Training Workflow
+## Training Workflow
 
 ### Option A: NVIDIA GPU (Simple - 1 Step)
 
@@ -103,7 +103,7 @@ python combine_training_metrics.py `
 
 ---
 
-## 🔨 Building the OS
+## Building the OS
 
 ### Export Model to Kernel
 
@@ -142,7 +142,7 @@ qemu-system-i386 -cdrom minios_carplay.iso -m 128M
 
 ---
 
-## 🎮 Using the OS
+## Using the OS
 
 ### Navigation
 
@@ -165,27 +165,27 @@ The system automatically checks every 30 minutes (at :00 and :30) for idle calen
 
 ---
 
-## 📊 Metrics Collected
+## Metrics Collected
 
 ### All 8 Required Metrics
 
 | # | Metric | Source | NVIDIA | AMD |
 |---|--------|--------|--------|-----|
-| 1 | **Accuracy** | Training loop | ✅ Real | ✅ Real |
-| 2 | **RAM** | psutil | ✅ Real | ✅ Real |
-| 3 | **GPU Allocated** | PyTorch CUDA | ✅ Real | ✅ Real (HWiNFO64) |
-| 4 | **GPU Reserved** | PyTorch CUDA | ✅ Real | ✅ Real (HWiNFO64) |
-| 5 | **Power** | NVML / HWiNFO64 | ⚠️ Est. | ✅ Real (HWiNFO64) |
-| 6 | **Energy** | Calculated | ⚠️ Est. | ✅ Real (HWiNFO64) |
-| 7 | **Time** | time.time() | ✅ Real | ✅ Real |
-| 8 | **Inference** | 100 tests | ✅ Real | ✅ Real |
+| 1 | **Accuracy** | Training loop | Real | Real |
+| 2 | **RAM** | psutil | Real | Real |
+| 3 | **GPU Allocated** | PyTorch CUDA | Real | Real (HWiNFO64) |
+| 4 | **GPU Reserved** | PyTorch CUDA | Real | Real (HWiNFO64) |
+| 5 | **Power** | NVML / HWiNFO64 | Est. | Real (HWiNFO64) |
+| 6 | **Energy** | Calculated | Est. | Real (HWiNFO64) |
+| 7 | **Time** | time.time() | Real | Real |
+| 8 | **Inference** | 100 tests | Real | Real |
 
 **NVIDIA**: 6/8 real, 2/8 estimated (power uses 115W TDP)  
 **AMD**: 8/8 real (with HWiNFO64)
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 minios/
@@ -207,7 +207,7 @@ minios/
 
 ---
 
-## 🧠 Neuromorphic Architecture
+## Neuromorphic Architecture
 
 ### Network Structure
 
@@ -242,7 +242,7 @@ Timesteps:     20 (spike-based temporal processing)
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### GPU Not Detected (AMD)
 
@@ -281,7 +281,7 @@ choco install qemu
 
 ---
 
-## 📚 Technical Details
+## Technical Details
 
 ### Training Hyperparameters
 
@@ -311,74 +311,14 @@ learning_rate = 0.001
 
 ---
 
-## 🎓 Research Metrics
+## Academic Description
 
-### Summary Statistics
-
-```
-Training Accuracy: 89-91%
-Training Time: 9.2 seconds (NVIDIA) / 12.0 seconds (AMD)
-RAM Usage: 803 MB peak
-GPU Memory: 2384 MB allocated / 8188 MB reserved
-Power: 115W average (NVIDIA TDP) / 118W (AMD real)
-Energy: 0.027 Wh (NVIDIA) / 0.039 Wh (AMD)
-Inference: 23.8 ms average (min: 20.7ms, max: 34.7ms, P95: 28.5ms)
-```
-
-### Comparison
-
-| Platform | GPU | Training Time | Power | Energy | Inference |
-|----------|-----|---------------|-------|--------|-----------|
-| NVIDIA | RTX 4060 | 9.2s | 115W | 0.027 Wh | 23.8ms |
-| AMD | RX 5500 XT | 12.0s | 118W | 0.039 Wh | 25.3ms |
+This project implements a neuromorphic Spiking Neural Network (SNN) using Leaky Integrate-and-Fire neurons for proactive activity suggestion in a custom operating system. The system trains on GPU (NVIDIA/AMD) using snnTorch, achieving 89-91% accuracy on context-aware recommendations, then deploys the model weights to a bootable OS kernel for real-time CPU inference. The neuromorphic architecture demonstrates energy-efficient edge computing through spike-based temporal processing, collecting comprehensive metrics including power consumption (0.026 Wh), inference latency (8-24ms), and learning dynamics across both training and deployment phases.
 
 ---
 
-## 🏆 Key Achievements
-
-- ✅ **Neuromorphic Computing**: Biologically-inspired spiking neurons
-- ✅ **Edge Deployment**: Model runs in bootable OS kernel
-- ✅ **Energy Efficient**: 0.027 Wh training, 24ms inference
-- ✅ **Cross-Platform**: NVIDIA and AMD GPU support
-- ✅ **Complete Metrics**: All 8 research metrics collected
-- ✅ **Real-Time**: Proactive suggestions every 30 minutes
-- ✅ **Context-Aware**: Adapts to time, energy, calendar
-
----
-
-## 📖 Academic Description
-
-### Short Version (2-3 sentences)
-
-"A neuromorphic AI operating system that uses Spiking Neural Networks to proactively suggest activities based on time, energy levels, and calendar context. Trained on GPU (91% accuracy) and deployed to a custom bootable OS, the system demonstrates real-time neuromorphic computing with sub-25ms inference on CPU."
-
-### Academic Version
-
-"This project implements a neuromorphic Spiking Neural Network (SNN) using Leaky Integrate-and-Fire neurons for proactive activity suggestion in a custom operating system. The system trains on GPU (NVIDIA/AMD) using snnTorch, achieving 89-91% accuracy on context-aware recommendations, then deploys the model weights to a bootable OS kernel for real-time CPU inference. The neuromorphic architecture demonstrates energy-efficient edge computing through spike-based temporal processing, collecting comprehensive metrics including power consumption (0.026 Wh), inference latency (8-24ms), and learning dynamics across both training and deployment phases."
-
----
-
-## 📝 License
+## License
 
 This project is for research and educational purposes.
 
 ---
-
-## 🙏 Credits
-
-- **snnTorch**: Jason Eshraghian (https://snntorch.readthedocs.io)
-- **PyTorch**: Facebook AI Research
-- **HWiNFO64**: Martin Malik (https://www.hwinfo.com)
-
----
-
-## 📧 Support
-
-For issues or questions:
-1. Check GPU detection: `python check_gpu.py`
-2. Verify build tools: `make --version`, `nasm --version`
-3. Test QEMU: `qemu-system-i386 --version`
-
----
-
-**Built with ❤️ for neuromorphic computing research**
