@@ -287,8 +287,26 @@ static void ml_update_context(uint32_t cycles, uint8_t idle) {
     else if (g_ml.current_hour >= 17 && g_ml.current_hour < 22) g_ml.time_segment = 2;
     else g_ml.time_segment = 3;
     
-    const uint8_t energy[] = {80, 70, 50, 30};
-    g_ml.energy_level = energy[g_ml.time_segment];
+    // Better energy model: gradual increase in morning, peak midday, decline evening
+    if (g_ml.current_hour >= 6 && g_ml.current_hour < 9) {
+        // Morning: 60-80 (waking up, energy building)
+        g_ml.energy_level = 60 + ((g_ml.current_hour - 6) * 7);
+    } else if (g_ml.current_hour >= 9 && g_ml.current_hour < 12) {
+        // Late morning: 80-90 (peak morning energy)
+        g_ml.energy_level = 80 + ((g_ml.current_hour - 9) * 3);
+    } else if (g_ml.current_hour >= 12 && g_ml.current_hour < 14) {
+        // Lunch: 70-80 (slight dip)
+        g_ml.energy_level = 75;
+    } else if (g_ml.current_hour >= 14 && g_ml.current_hour < 17) {
+        // Afternoon: 65-75
+        g_ml.energy_level = 70;
+    } else if (g_ml.current_hour >= 17 && g_ml.current_hour < 22) {
+        // Evening: 50-65 (declining)
+        g_ml.energy_level = 65 - ((g_ml.current_hour - 17) * 3);
+    } else {
+        // Night/early morning: 30-50 (low)
+        g_ml.energy_level = 35;
+    }
     
     uint32_t total = g_ml.total_accepts + g_ml.total_rejects;
     g_ml.engagement = total > 0 ? (g_ml.total_accepts * 100) / total : 50;
@@ -348,11 +366,35 @@ static int get_idle_minutes_until_next_event(void) {
     }
     
     int idle_mins = next_event_mins - current_mins;
-    return (idle_mins > 0 && idle_mins < 240) ? idle_mins : 0;  // Max 4 hours
+    
+    // If no events found (idle_mins >= full day), use time-of-day heuristic
+    if (idle_mins >= 24 * 60 || idle_mins <= 0) {
+        // Estimate based on time of day
+        if (g_ml.current_hour >= 6 && g_ml.current_hour < 9) {
+            return 60;  // Morning: 1 hour blocks
+        } else if (g_ml.current_hour >= 9 && g_ml.current_hour < 12) {
+            return 120; // Mid-morning: 2 hour blocks
+        } else if (g_ml.current_hour >= 12 && g_ml.current_hour < 14) {
+            return 60;  // Lunch: 1 hour
+        } else if (g_ml.current_hour >= 14 && g_ml.current_hour < 17) {
+            return 90;  // Afternoon: 1.5 hours
+        } else if (g_ml.current_hour >= 17 && g_ml.current_hour < 20) {
+            return 120; // Evening: 2 hours
+        } else if (g_ml.current_hour >= 20 && g_ml.current_hour < 22) {
+            return 90;  // Night: 1.5 hours
+        } else {
+            return 30;  // Late night: 30 min
+        }
+    }
+    
+    return idle_mins;
 }
 
 // Get neuromorphic SNN suggestion
 static const char* get_snn_suggestion_wrapper(int* out_activity_idx) {
+    static const char* last_suggestion = NULL;  // Track last suggestion
+    static uint8_t retry_count = 0;
+    
     // Calculate idle time
     int idle_mins = get_idle_minutes_until_next_event();
     
@@ -367,18 +409,54 @@ static const char* get_snn_suggestion_wrapper(int* out_activity_idx) {
         }
     }
     
+    // Vary the engagement and energy slightly to get different suggestions
+    int varied_energy = g_ml.energy_level;
+    int varied_engagement = g_ml.engagement;
+    
+    // Add some variation based on retry count to avoid repetition
+    if (retry_count > 0) {
+        varied_energy = (g_ml.energy_level + retry_count * 15) % 100;
+        varied_engagement = (g_ml.engagement + retry_count * 20) % 100;
+    }
+    
     // Get SNN suggestion (using renamed function to avoid conflict)
     const char* suggestion = get_snn_proactive_suggestion(
         g_ml.current_hour,
         g_ml.current_minute,
         g_ml.day_of_week,
-        g_ml.energy_level,
-        g_ml.engagement,
+        varied_energy,
+        varied_engagement,
         idle_mins,
         has_meeting,
         (g_ml.total_accepts > 10) ? 10 : g_ml.total_accepts,
         (g_ml.total_rejects > 10) ? 10 : g_ml.total_rejects
     );
+    
+    // If same as last suggestion, try again with variation
+    if (last_suggestion != NULL && retry_count < 5) {
+        // Simple string comparison (works because we're comparing pointers to string literals)
+        uint8_t same = 1;
+        const char* p1 = last_suggestion;
+        const char* p2 = suggestion;
+        while (*p1 && *p2) {
+            if (*p1 != *p2) {
+                same = 0;
+                break;
+            }
+            p1++;
+            p2++;
+        }
+        if (*p1 != *p2) same = 0;
+        
+        if (same) {
+            retry_count++;
+            return get_snn_suggestion_wrapper(out_activity_idx);  // Recursively try again
+        }
+    }
+    
+    // Reset retry count and save this suggestion
+    retry_count = 0;
+    last_suggestion = suggestion;
     
     // Find matching activity index (for calendar integration)
     *out_activity_idx = 0;  // Default
@@ -988,25 +1066,46 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         }
         
         // =====================================================================
-        // FULLY PROACTIVE: Check for idle time every 15 minutes and suggest!
+        // FULLY PROACTIVE: Check for idle time every 30 minutes and suggest!
         // =====================================================================
         static uint8_t last_suggestion_minute = 255;  // Track when we last suggested
+        static const char* last_3_suggestions[3] = {NULL, NULL, NULL};  // Anti-repeat buffer
+        static uint8_t suggestion_index = 0;
         
-        // Check every 15 minutes (on the quarter hour: 0, 15, 30, 45)
-        if (g_ml.current_minute % 15 == 0 && g_ml.current_minute != last_suggestion_minute) {
+        // Check every 30 minutes (on the half hour: 0, 30)
+        if ((g_ml.current_minute == 0 || g_ml.current_minute == 30) && 
+            g_ml.current_minute != last_suggestion_minute) {
             last_suggestion_minute = g_ml.current_minute;
             
             // Calculate idle time
             int idle_mins = get_idle_minutes_until_next_event();
             
-            // PROACTIVE: If there's at least 15 minutes free, suggest something!
-            if (idle_mins >= 15 || idle_mins == 0) {  // 0 means no events = lots of free time!
+            // PROACTIVE: If there's at least 30 minutes free, suggest something!
+            if (idle_mins >= 30 || idle_mins == 0) {  // 0 means no events = lots of free time!
                 // If no events at all, assume 3 hours free
                 if (idle_mins == 0) idle_mins = 180;
                 
-                // Get neuromorphic SNN suggestion
+                // Get neuromorphic SNN suggestion (with anti-repeat logic)
                 int activity_idx;
                 const char* snn_suggestion = get_snn_suggestion_wrapper(&activity_idx);
+                
+                // Check if this matches any of the last 3 suggestions
+                uint8_t is_repeat = 0;
+                for (int i = 0; i < 3; i++) {
+                    if (last_3_suggestions[i] == snn_suggestion) {
+                        is_repeat = 1;
+                        break;
+                    }
+                }
+                
+                // If it's a repeat, try to vary by adjusting engagement
+                if (is_repeat) {
+                    // Temporarily boost engagement to get different suggestion
+                    uint8_t saved_engagement = g_ml.engagement;
+                    g_ml.engagement = (g_ml.engagement + 30) % 100;
+                    snn_suggestion = get_snn_suggestion_wrapper(&activity_idx);
+                    g_ml.engagement = saved_engagement;
+                }
                 
                 // Add proactive suggestion to calendar
                 if (g_event_count < MAX_EVENTS) {
@@ -1028,6 +1127,10 @@ void kernel_main(uint32_t magic, uint32_t addr) {
                         1,  // Is AI suggestion
                         activity_idx % 6
                     };
+                    
+                    // Track this suggestion for anti-repeat
+                    last_3_suggestions[suggestion_index % 3] = snn_suggestion;
+                    suggestion_index++;
                     
                     // If on calendar screen, refresh it
                     if (current_screen == SCREEN_CALENDAR) {

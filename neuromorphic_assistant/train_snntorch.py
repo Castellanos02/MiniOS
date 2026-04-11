@@ -137,7 +137,7 @@ class GPUMonitor:
     def detect_gpu(self):
         """Detect available GPU (NVIDIA, AMD, or CPU)"""
         
-        # Try PyTorch CUDA first (works even without NVML!)
+        # Try PyTorch CUDA first (NVIDIA or AMD via ROCm)
         if torch.cuda.is_available():
             gpu_name = torch.cuda.get_device_name(0)
             print(f"✓ Detected GPU via PyTorch CUDA: {gpu_name}")
@@ -158,14 +158,32 @@ class GPUMonitor:
                 print(f"⚠️  NVML not available - using PyTorch CUDA metrics")
                 return 'nvidia_cuda'
         
+        # Try DirectML (AMD on Windows)
+        try:
+            import torch_directml
+            if torch_directml.is_available():
+                print(f"✓ Detected AMD GPU via DirectML")
+                print(f"   Device: {torch_directml.device()}")
+                return 'amd_directml'
+        except ImportError:
+            print(f"⚠️  DirectML not available (install: pip install torch-directml)")
+        except Exception as e:
+            print(f"⚠️  DirectML error: {e}")
+        
         print("⚠ No GPU detected - using CPU only")
         return 'cpu'
     
     def get_device(self):
         """Get PyTorch device"""
-        if self.gpu_type in ['nvidia', 'nvidia_cuda', 'amd_rocm']:
+        if self.gpu_type in ['nvidia', 'nvidia_cuda']:
             if torch.cuda.is_available():
                 return torch.device('cuda')
+        elif self.gpu_type == 'amd_directml':
+            try:
+                import torch_directml
+                return torch_directml.device()
+            except:
+                pass
         return torch.device('cpu')
     
     def get_gpu_memory(self):

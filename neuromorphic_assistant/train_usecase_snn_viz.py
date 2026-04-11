@@ -12,8 +12,6 @@ Features:
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import DataLoader, TensorDataset
 import snntorch as snn
 from snntorch import surrogate
 from snntorch import functional as SF
@@ -21,6 +19,20 @@ import numpy as np
 import json
 import time
 from datetime import datetime
+
+# ── Spike visualisation (optional) ──────────────────────────────────────────
+try:
+    from visualize_spikes import SpikeVisualizer, ACTIVITY_LABELS as VIZ_LABELS
+    VIZ_AVAILABLE = True
+    _viz = SpikeVisualizer(output_dir="spike_plots")
+    print("✓ SpikeVisualizer loaded  →  plots will be saved to ./spike_plots/")
+except ImportError:
+    VIZ_AVAILABLE = False
+    print("⚠  visualize_spikes.py not found — spike plots disabled")
+
+# Epochs at which to save a full raster+rate dashboard (0 = every epoch)
+PLOT_EPOCHS = {1, 5, 10, 15, 20}   # adjust as needed
+# Set to None to plot every epoch:  PLOT_EPOCHS = None
 
 # Import use case data
 from use_case_data import (
@@ -91,25 +103,28 @@ class NeuromorphicActivitySNN(nn.Module):
         mem1 = self.lif1.init_leaky()
         mem2 = self.lif2.init_leaky()
         
-        # Record output spikes
+        # Record spikes at both layers
+        spk_hidden_rec = []
         spk_out_rec = []
-        
+
         # Process through time
         for step in range(num_steps):
             # Input -> Hidden
             cur1 = self.fc1(x)
             spk1, mem1 = self.lif1(cur1, mem1)
-            
+            spk_hidden_rec.append(spk1)
+
             # Hidden -> Output
             cur2 = self.fc2(spk1)
             spk2, mem2 = self.lif2(cur2, mem2)
-            
+
             spk_out_rec.append(spk2)
-        
-        # Stack spikes over time
-        spk_out = torch.stack(spk_out_rec)
-        
-        return spk_out, mem2
+
+        # Stack spikes over time  →  (T, batch, neurons)
+        spk_hidden = torch.stack(spk_hidden_rec)
+        spk_out    = torch.stack(spk_out_rec)
+
+        return spk_out, mem2, spk_hidden
 
 
 # ============================================================
@@ -350,8 +365,7 @@ def add_inference_metrics(filepath, inference_metrics):
 # Train with Use Case Data
 # ============================================================
 
-def train_use_case_snn(num_samples=500, num_epochs=20, hidden_size=64,
-                       batch_size=32, lr=0.01):
+def train_use_case_snn(num_samples=500, num_epochs=20, hidden_size=64):
     """Train SNN on real use case scenarios"""
     
     print("\n" + "="*70)
@@ -372,28 +386,12 @@ def train_use_case_snn(num_samples=500, num_epochs=20, hidden_size=64,
     X_train, y_train, scenarios = generate_use_case_training_data(num_samples)
     
     # Convert to tensors
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    y_train = torch.tensor(y_train, dtype=torch.long)
-
+    X_train = torch.tensor(X_train, dtype=torch.float32).to(monitor.device)
+    y_train = torch.tensor(y_train, dtype=torch.long).to(monitor.device)
+    
     print(f"✓ Generated {len(X_train)} training samples")
     print(f"  Input features: {X_train.shape[1]}")
     print(f"  Activity types: {len(ACTIVITY_LABELS)}")
-
-    # Class weights — inverse frequency to counter mode collapse
-    class_counts = torch.bincount(y_train, minlength=len(ACTIVITY_LABELS)).float()
-    class_weights = 1.0 / (class_counts + 1e-6)
-    class_weights = (class_weights / class_weights.sum() * len(ACTIVITY_LABELS)).to(monitor.device)
-
-    print("\n  Class distribution (top imbalances):")
-    sorted_idx = class_counts.argsort()
-    for i in sorted_idx[:3]:
-        print(f"    {ACTIVITY_LABELS[i]:30s} → {int(class_counts[i])} samples")
-    for i in sorted_idx[-3:]:
-        print(f"    {ACTIVITY_LABELS[i]:30s} → {int(class_counts[i])} samples")
-
-    # Mini-batch DataLoader with shuffle
-    dataset = TensorDataset(X_train, y_train)
-    loader  = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=False)
     
     # Show sample scenarios
     print("\n" + "-"*70)
@@ -429,76 +427,91 @@ def train_use_case_snn(num_samples=500, num_epochs=20, hidden_size=64,
         nn.init.xavier_uniform_(model.fc1.weight)
         nn.init.xavier_uniform_(model.fc2.weight)
     
-    # Optimizer — higher lr, cosine annealing to reduce oscillation
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=num_epochs, eta_min=1e-4
-    )
+    # Optimizer and loss
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+    loss_fn = SF.ce_rate_loss()
     
     # Training
     monitor.start_monitoring()
     
-    print(f"\nTraining for {num_epochs} epochs (batch_size={batch_size}, lr={lr})...")
+    print(f"\nTraining for {num_epochs} epochs...")
     print("="*70)
     
     best_accuracy = 0
-    best_model_state = None
+    epoch_output_rates  = []   # for heatmap across epochs
+    epoch_hidden_rates  = []
 
     for epoch in range(num_epochs):
         model.train()
-        epoch_loss = 0.0
-        epoch_correct = 0
-        epoch_total = 0
+        optimizer.zero_grad()
 
-        for X_batch, y_batch in loader:
-            X_batch = X_batch.to(monitor.device)
-            y_batch = y_batch.to(monitor.device)
+        # Forward pass — now returns hidden spikes too
+        spk_out, mem_out, spk_hidden = model(X_train, num_steps=30)
 
-            optimizer.zero_grad()
+        # Loss
+        loss = loss_fn(spk_out, y_train)
 
-            # Forward pass
-            spk_out, mem_out = model(X_batch, num_steps=30)
+        # Backward
+        loss.backward()
+        optimizer.step()
 
-            # Class-weighted cross-entropy on spike counts
-            spike_counts = spk_out.sum(0)               # (batch, classes)
-            loss = F.cross_entropy(spike_counts, y_batch, weight=class_weights)
+        # Calculate accuracy
+        with torch.no_grad():
+            spike_counts = spk_out.sum(0)
+            _, predicted = spike_counts.max(1)
+            correct = (predicted == y_train).sum().item()
+            accuracy = (correct / len(y_train)) * 100
 
-            loss.backward()
-            optimizer.step()
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
 
-            with torch.no_grad():
-                _, predicted = spike_counts.max(1)
-                epoch_correct += (predicted == y_batch).sum().item()
-                epoch_total   += y_batch.size(0)
-                epoch_loss    += loss.item() * y_batch.size(0)
-
-        scheduler.step()
-
-        accuracy  = (epoch_correct / epoch_total) * 100
-        avg_loss  = epoch_loss / epoch_total
-
-        if accuracy > best_accuracy:
-            best_accuracy    = accuracy
-            best_model_state = {k: v.clone() for k, v in model.state_dict().items()}
-
-        # Record metrics (pass avg loss and accuracy for this epoch)
-        metrics = monitor.record_metrics(epoch + 1, accuracy, avg_loss)
+        # Record metrics
+        metrics = monitor.record_metrics(epoch + 1, accuracy, loss.item())
 
         if (epoch + 1) % 5 == 0 or epoch == 0:
-            print(f"Epoch {epoch+1:3d}/{num_epochs}: "
-                  f"Loss={avg_loss:.4f}, "
+            print(f"Epoch {epoch+1:2d}/{num_epochs}: "
+                  f"Loss={loss.item():.4f}, "
                   f"Acc={accuracy:5.1f}%, "
                   f"Best={best_accuracy:5.1f}%, "
-                  f"LR={scheduler.get_last_lr()[0]:.5f}, "
                   f"Time={metrics['time_seconds']:.1f}s")
+
+        # ── Spike visualisation ──────────────────────────────────────────────
+        if VIZ_AVAILABLE:
+            with torch.no_grad():
+                # Use first sample for per-epoch plots
+                spk_out_np    = spk_out.detach().cpu().numpy()     # (T, N, 20)
+                spk_hidden_np = spk_hidden.detach().cpu().numpy()  # (T, N, 64)
+
+                # Accumulate per-neuron firing rates for heatmaps
+                epoch_output_rates.append(spk_out_np[:, 0, :].sum(0) / spk_out_np.shape[0])
+                epoch_hidden_rates.append(spk_hidden_np[:, 0, :].sum(0) / spk_hidden_np.shape[0])
+
+                do_plot = (PLOT_EPOCHS is None) or ((epoch + 1) in PLOT_EPOCHS)
+                if do_plot:
+                    print(f"\n  📊 Saving spike visualisations for epoch {epoch+1}...")
+                    # Output-layer dashboard (raster + rate + heatmap so far)
+                    _viz.plot_all(
+                        spk_out_np,
+                        layer_name="Output Layer",
+                        epoch=epoch + 1,
+                        neuron_labels=VIZ_LABELS,
+                        epoch_rates=epoch_output_rates,
+                    )
+                    # Hidden-layer raster
+                    _viz.plot_raster(
+                        spk_hidden_np,
+                        layer_name="Hidden Layer",
+                        epoch=epoch + 1,
+                    )
+                    # Hidden-layer firing rate
+                    _viz.plot_firing_rate(
+                        spk_hidden_np,
+                        layer_name="Hidden Layer",
+                        epoch=epoch + 1,
+                    )
     
     print("="*70)
-
-    # Restore best weights before returning
-    if best_model_state is not None:
-        model.load_state_dict(best_model_state)
-        print(f"\n  ✓ Best weights restored (accuracy: {best_accuracy:.1f}%)")
-
+    
     # Summary
     summary = monitor.get_summary()
     print(f"\nTraining Summary:")
@@ -561,8 +574,8 @@ def test_proactive_suggestions(model, device):
         for scenario in test_scenarios:
             x = torch.tensor([scenario['features']], dtype=torch.float32).to(device)
             
-            # Get prediction
-            spk_out, mem_out = model(x, num_steps=30)
+            # Get prediction (model now returns 3 values)
+            spk_out, mem_out, _ = model(x, num_steps=30)
             spike_counts = spk_out.sum(0)
             _, predicted = spike_counts.max(1)
             predicted_idx = predicted.item()
@@ -622,9 +635,7 @@ if __name__ == "__main__":
     model, monitor, best_accuracy = train_use_case_snn(
         num_samples=500,
         num_epochs=20,
-        hidden_size=64,
-        batch_size=32,
-        lr=0.01,
+        hidden_size=64
     )
     
     # Save metrics
