@@ -178,12 +178,15 @@ run-enhanced:
 
 # Build CarPlay-style kernel with app launcher (works everywhere!)
 iso-carplay: check-grub $(BUILD_DIR)
-	@echo "Building CarPlay-style kernel with app launcher..."
+	@echo "Building CarPlay-style kernel with FPPS scheduler..."
 	$(AS) -f elf32 $(KERNEL_DIR)/multiboot_header.asm -o $(BUILD_DIR)/multiboot_header.o
+	$(AS) -f elf32 $(KERNEL_DIR)/scheduler.asm -o $(BUILD_DIR)/scheduler.o
 	$(CC) -m32 -ffreestanding -fno-stack-protector -nostdlib -Ikernel \
 		-c $(KERNEL_DIR)/kernel_carplay.c -o $(BUILD_DIR)/kernel_carplay.o
 	$(LD) -m elf_i386 -T $(KERNEL_DIR)/linker_multiboot.ld \
-		$(BUILD_DIR)/multiboot_header.o $(BUILD_DIR)/kernel_carplay.o \
+		$(BUILD_DIR)/multiboot_header.o \
+		$(BUILD_DIR)/scheduler.o \
+		$(BUILD_DIR)/kernel_carplay.o \
 		-o $(BUILD_DIR)/minios_carplay.bin
 	@echo "✓ Built CarPlay kernel"
 	@echo "Creating CarPlay ISO..."
