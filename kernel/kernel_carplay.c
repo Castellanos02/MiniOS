@@ -548,21 +548,21 @@ static void draw_home_screen(uint8_t selected_app) {
                   COLOR_WHITE, COLOR_RED, 
                   selected_app == 0);
     
-    // AI Suggestions app (position 1)
+    // Maps app (position 1)
     draw_app_icon(start_x + spacing, start_y,
-                  " [AI] ", "Suggester",
+                  " [MAP] ", "Maps",
                   COLOR_WHITE, COLOR_LIGHT_BLUE,
                   selected_app == 1);
     
-    // Memory app (position 2)
+    // Phone app (position 2)
     draw_app_icon(start_x, start_y + 8,
-                  " [MEM] ", "Memory",
+                  " [PHN] ", "Phone",
                   COLOR_WHITE, COLOR_LIGHT_MAGENTA,
                   selected_app == 2);
     
-    // Settings app (position 3)
+    // Music app (position 3)
     draw_app_icon(start_x + spacing, start_y + 8,
-                  " [SET] ", "Settings",
+                  " [MUS] ", "Music",
                   COLOR_WHITE, COLOR_DARK_GRAY,
                   selected_app == 3);
     
