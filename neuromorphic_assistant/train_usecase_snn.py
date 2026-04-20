@@ -23,9 +23,13 @@ from datetime import datetime
 
 from use_case_data import (
     generate_use_case_training_data,
+    get_splits,
     ACTIVITY_LABELS,
+    SUGGESTION_LABELS,
+    NUM_FEATURES,
+    NUM_CLASSES,
     UserProfile,
-    USE_CASES
+    USE_CASES,
 )
 
 try:
@@ -41,8 +45,29 @@ try:
 except ImportError:
     NVML_AVAILABLE = False
 
-MODEL_PATH   = 'minios_usecase_model.pth'
-METRICS_PATH = 'usecase_training_metrics.json'
+MODEL_PATH = 'minios_usecase_model.pth'
+
+def _detect_gpu_type() -> str:
+    """Lightweight GPU detection — no monitor object needed."""
+    if torch.cuda.is_available():
+        return 'nvidia'
+    try:
+        import torch_directml
+        if torch_directml.is_available():
+            return 'amd_directml'
+    except ImportError:
+        pass
+    return 'cpu'
+
+def get_metrics_path(gpu_type: str) -> str:
+    """Return a GPU-specific metrics filename so AMD and NVIDIA runs never overwrite each other."""
+    mapping = {
+        'nvidia':        'usecase_training_metrics_nvidia.json',
+        'nvidia_cuda':   'usecase_training_metrics_nvidia.json',
+        'amd_directml':  'usecase_training_metrics_amd.json',
+        'cpu':           'usecase_training_metrics_cpu.json',
+    }
+    return mapping.get(gpu_type, f'usecase_training_metrics_{gpu_type}.json')
 
 
 # ============================================================
@@ -50,7 +75,7 @@ METRICS_PATH = 'usecase_training_metrics.json'
 # ============================================================
 
 class NeuromorphicActivitySNN(nn.Module):
-    def __init__(self, input_size=10, hidden_size=64, output_size=20, beta=0.9):
+    def __init__(self, input_size=NUM_FEATURES, hidden_size=64, output_size=NUM_CLASSES, beta=0.9):
         super().__init__()
 
         self.input_size  = input_size
@@ -111,7 +136,7 @@ class GPUMonitor:
                     print("✓ NVML monitoring enabled")
                     return 'nvidia'
                 except Exception as e:
-                    print(f"⚠️  NVML disabled ({e})")
+                    print(f"NVML disabled ({e})")
                     return 'nvidia_cuda'
             return 'nvidia_cuda'
 
@@ -210,8 +235,8 @@ def load_model_from_disk():
     try:
         checkpoint = torch.load(MODEL_PATH, map_location='cpu')
     except FileNotFoundError:
-        print(f"\n❌  Model file '{MODEL_PATH}' not found.")
-        print(f"    Run  python train_usecase_snn.py --train  first.")
+        print(f"\nModel file '{MODEL_PATH}' not found.")
+        print(f"Run  python train_usecase_snn.py --train  first.")
         raise SystemExit(1)
 
     model = NeuromorphicActivitySNN(
@@ -230,62 +255,74 @@ def load_model_from_disk():
     return model, checkpoint
 
 
-def update_metrics_file(key, data):
+def update_metrics_file(key, data, metrics_path: str):
     """Read metrics JSON, update one top-level key, write back."""
     try:
-        with open(METRICS_PATH, 'r') as f:
+        with open(metrics_path, 'r') as f:
             metrics = json.load(f)
     except FileNotFoundError:
         metrics = {}
 
     metrics[key] = data
 
-    with open(METRICS_PATH, 'w') as f:
+    with open(metrics_path, 'w') as f:
         json.dump(metrics, f, indent=2)
 
-    print(f"✓ Saved '{key}' to {METRICS_PATH}")
+    print(f"✓ Saved '{key}' to {metrics_path}")
 
 
 # ============================================================
 # --train
 # ============================================================
 
-def run_train(num_samples=500, num_epochs=20, hidden_size=64,
-              batch_size=32, lr=0.01):
+def run_train(num_samples=1000, num_epochs=200, hidden_size=64,
+              batch_size=32, lr=0.001, split_mode='70-20-10'):
 
     print("\n" + "="*70)
-    print("NEUROMORPHIC SNN — USE CASE TRAINING")
+    print("NEUROMORPHIC SNN — DRIVING ASSISTANT TRAINING")
     print("="*70)
 
     monitor = GPUMonitor()
 
-    print(f"\nGenerating {num_samples} use case scenarios...")
-    X_train, y_train, scenarios = generate_use_case_training_data(num_samples)
+    print(f"\nGenerating {num_samples} driving scenarios...")
+    X_all, y_all, scenarios = generate_use_case_training_data(num_samples)
 
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    y_train = torch.tensor(y_train, dtype=torch.long)
+    # ---- 70-20-10 (or 60-20-20) split ----
+    X_tr, X_va, X_te, y_tr, y_va, y_te = get_splits(X_all, y_all, mode=split_mode)
+    print(f"  Split ({split_mode}):  train={len(X_tr)}  val={len(X_va)}  test={len(X_te)}")
 
-    print(f"✓ {len(X_train)} samples  |  "
+    X_train = torch.tensor(X_tr, dtype=torch.float32)
+    y_train = torch.tensor(y_tr, dtype=torch.long)
+    X_val   = torch.tensor(X_va, dtype=torch.float32)
+    y_val   = torch.tensor(y_va, dtype=torch.long)
+    X_test  = torch.tensor(X_te, dtype=torch.float32)
+    y_test  = torch.tensor(y_te, dtype=torch.long)
+
+    print(f"  {len(X_train)} train samples  |  "
           f"{X_train.shape[1]} features  |  "
-          f"{len(ACTIVITY_LABELS)} activity classes")
+          f"{len(SUGGESTION_LABELS)} suggestion classes")
 
-    class_counts  = torch.bincount(y_train, minlength=len(ACTIVITY_LABELS)).float()
+    class_counts  = torch.bincount(y_train, minlength=len(SUGGESTION_LABELS)).float()
     class_weights = 1.0 / (class_counts + 1e-6)
-    class_weights = (class_weights / class_weights.sum() * len(ACTIVITY_LABELS)).to(monitor.device)
+    class_weights = (class_weights / class_weights.sum() * len(SUGGESTION_LABELS)).to(monitor.device)
 
-    dataset = TensorDataset(X_train, y_train)
-    loader  = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=False)
+    train_dataset = TensorDataset(X_train, y_train)
+    loader        = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
+    val_dataset   = TensorDataset(X_val, y_val)
+    val_loader    = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    print("\nSample scenarios:")
+    print("\nSample driving scenarios:")
     for i in range(3):
         s   = scenarios[i]
-        day = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][s['day']]
+        day = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][s['day_of_week']]
         print(f"  {day} {s['hour']:02d}:{s['minute']:02d} | "
-              f"energy={s['energy']} | idle={s['idle_minutes']}min "
-              f"→ {s['suggestion']}")
+              f"dest={s['destination_type']} | "
+              f"gas={s['gas_level_pct']:.0f}% | "
+              f"fatigue={s['driver_fatigue_level']:.1f} "
+              f"-> {s['suggestion']}")
 
     input_size  = X_train.shape[1]
-    output_size = len(ACTIVITY_LABELS)
+    output_size = len(SUGGESTION_LABELS)
 
     model = NeuromorphicActivitySNN(
         input_size=input_size,
@@ -336,21 +373,48 @@ def run_train(num_samples=500, num_epochs=20, hidden_size=64,
         accuracy = (epoch_correct / epoch_total) * 100
         avg_loss = epoch_loss / epoch_total
 
-        if accuracy > best_accuracy:
-            best_accuracy    = accuracy
+        # --- validation pass ---
+        model.eval()
+        val_correct = val_total = 0
+        with torch.no_grad():
+            for Xv, yv in val_loader:
+                Xv, yv = Xv.to(monitor.device), yv.to(monitor.device)
+                spk_v, _ = model(Xv, num_steps=30)
+                _, pred_v = spk_v.sum(0).max(1)
+                val_correct += (pred_v == yv).sum().item()
+                val_total   += yv.size(0)
+        val_accuracy = (val_correct / val_total) * 100
+
+        if val_accuracy > best_accuracy:
+            best_accuracy    = val_accuracy
             best_model_state = {k: v.clone() for k, v in model.state_dict().items()}
 
         metrics = monitor.record_metrics(epoch + 1, accuracy, avg_loss)
 
-        if (epoch + 1) % 5 == 0 or epoch == 0:
+        if True:
             print(f"Epoch {epoch+1:3d}/{num_epochs}  "
-                  f"loss={avg_loss:.4f}  acc={accuracy:5.1f}%  "
-                  f"best={best_accuracy:5.1f}%  "
+                  f"loss={avg_loss:.4f}  train_acc={accuracy:5.1f}%  "
+                  f"val_acc={val_accuracy:5.1f}%  "
+                  f"best_val={best_accuracy:5.1f}%  "
                   f"t={metrics['time_seconds']:.1f}s")
 
     if best_model_state:
         model.load_state_dict(best_model_state)
-        print(f"\n✓ Best weights restored  (accuracy: {best_accuracy:.1f}%)")
+        print(f"\n  Best val weights restored  (val_acc: {best_accuracy:.1f}%)")
+
+    # --- test-set evaluation ---
+    model.eval()
+    test_correct = test_total = 0
+    test_loader  = DataLoader(TensorDataset(X_test, y_test), batch_size=batch_size)
+    with torch.no_grad():
+        for Xt, yt in test_loader:
+            Xt, yt = Xt.to(monitor.device), yt.to(monitor.device)
+            spk_t, _ = model(Xt, num_steps=30)
+            _, pred_t = spk_t.sum(0).max(1)
+            test_correct += (pred_t == yt).sum().item()
+            test_total   += yt.size(0)
+    test_accuracy = (test_correct / test_total) * 100
+    print(f"  Test-set accuracy: {test_accuracy:.1f}%")
 
     # Save model
     default_profile = UserProfile()
@@ -359,26 +423,34 @@ def run_train(num_samples=500, num_epochs=20, hidden_size=64,
         'input_size':          model.input_size,
         'hidden_size':         model.hidden_size,
         'output_size':         model.output_size,
+        'suggestion_labels':   SUGGESTION_LABELS,
         'activity_labels':     ACTIVITY_LABELS,
         'use_cases':           USE_CASES,
         'default_preferences': default_profile.preferences,
-        'best_accuracy':       best_accuracy,
+        'best_val_accuracy':   best_accuracy,
+        'test_accuracy':       test_accuracy,
+        'split_mode':          split_mode,
+        'num_samples':         num_samples,
         'proactive':           True,
-        'fills_idle_time':     True,
+        'driving_assistant':   True,
     }, MODEL_PATH)
-    print(f"✓ Model saved to {MODEL_PATH}")
+    print(f"  Model saved to {MODEL_PATH}")
 
-    # Save training metrics
+    # Save training metrics to GPU-specific file
+    metrics_path = get_metrics_path(monitor.gpu_type)
     summary = monitor.get_summary()
-    update_metrics_file('summary', summary)
-    update_metrics_file('history', monitor.history)
+    summary['test_accuracy']  = test_accuracy
+    summary['split_mode']     = split_mode
+    update_metrics_file('summary', summary, metrics_path)
+    update_metrics_file('history', monitor.history, metrics_path)
 
     monitor.cleanup()
 
     print("\n" + "="*70)
-    print("✓ TRAINING COMPLETE")
+    print("  TRAINING COMPLETE")
     print("="*70)
-    print(f"  Best accuracy: {best_accuracy:.1f}%")
+    print(f"  Best val accuracy : {best_accuracy:.1f}%")
+    print(f"  Test accuracy     : {test_accuracy:.1f}%")
     print(f"\nNext:")
     print(f"  python train_usecase_snn.py --benchmark-gpu")
     print(f"  python train_usecase_snn.py --loihi")
@@ -456,7 +528,7 @@ def run_benchmark_gpu(num_tests=100, num_steps=30):
     print(f"  Daily energy (24/7): {daily_energy_wh:.4f} Wh")
     print("="*70)
 
-    update_metrics_file('gpu_benchmark', result)
+    update_metrics_file('gpu_benchmark', result, get_metrics_path(monitor.gpu_type))
     monitor.cleanup()
 
     print(f"\nNext: python train_usecase_snn.py --loihi")
@@ -544,9 +616,12 @@ def run_loihi_estimate(num_steps=30, avg_spike_rate=0.1):
     print(f"  Note: {result['note']}")
     print("="*70)
 
+    # Detect GPU type so we read/write the right metrics file
+    metrics_path = get_metrics_path(_detect_gpu_type())
+
     # If GPU benchmark already exists, print savings immediately
     try:
-        with open(METRICS_PATH, 'r') as f:
+        with open(metrics_path, 'r') as f:
             metrics = json.load(f)
         gpu = metrics.get('gpu_benchmark')
         if gpu:
@@ -560,7 +635,7 @@ def run_loihi_estimate(num_steps=30, avg_spike_rate=0.1):
     except (FileNotFoundError, KeyError):
         print(f"\n  Tip: run --benchmark-gpu first to see GPU vs Loihi savings.")
 
-    update_metrics_file('loihi_estimate', result)
+    update_metrics_file('loihi_estimate', result, metrics_path)
 
 
 # ============================================================
