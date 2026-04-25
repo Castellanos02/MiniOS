@@ -325,71 +325,7 @@ def save_combined_metrics(combined, output_path):
     """Save combined metrics to JSON"""
     with open(output_path, 'w') as f:
         json.dump(combined, f, indent=2)
-    print(f"\n✓ Combined metrics saved to: {output_path}")
-
-
-# def create_visualization(combined, output_path):
-#     """Create visualization of metrics"""
-
-#     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-#     fig.suptitle('Training Metrics Summary', fontsize=16, fontweight='bold')
-
-#     # 1. Accuracy — train vs val
-#     ax = axes[0, 0]
-#     ax.bar(['Train Accuracy', 'Val Accuracy'],
-#            [combined['accuracy_percent'], combined['val_accuracy_percent']],
-#            color=['steelblue', 'orange'], alpha=0.7)
-#     ax.set_ylabel('Accuracy (%)')
-#     ax.set_title('Final Accuracy')
-#     ax.set_ylim([0, 100])
-#     ax.grid(True, alpha=0.3, axis='y')
-
-#     # 2. Power
-#     ax = axes[0, 1]
-#     ax.bar(['Min', 'Avg', 'Max'],
-#            [combined['gpu_power_min_w'], combined['gpu_power_avg_w'], combined['gpu_power_max_w']],
-#            color='orange', alpha=0.7)
-#     ax.set_ylabel('Power (W)')
-#     ax.set_title('GPU Power (HWiNFO64)')
-#     ax.grid(True, alpha=0.3, axis='y')
-
-#     # 3. Temperature
-#     ax = axes[1, 0]
-#     ax.bar(['Average', 'Maximum'],
-#            [combined['gpu_temp_avg_c'], combined['gpu_temp_max_c']],
-#            color='red', alpha=0.7)
-#     ax.set_ylabel('Temperature (°C)')
-#     ax.set_title('GPU Temperature (HWiNFO64)')
-#     ax.grid(True, alpha=0.3, axis='y')
-
-#     # 4. Summary text
-#     ax = axes[1, 1]
-#     ax.axis('off')
-#     summary_text = f"""
-# COMPLETE METRICS SUMMARY
-# {'='*30}
-
-# Training:
-#   Train Accuracy: {combined['accuracy_percent']:.1f}%
-#   Val Accuracy:   {combined['val_accuracy_percent']:.1f}%
-#   Val Loss:       {combined['val_loss']:.4f}
-#   Time: {combined['total_time_seconds']:.1f}s
-#   RAM: {combined['ram_mb']:.0f} MB
-#   Inference: {combined['avg_inference_ms']:.2f} ms
-
-# GPU (HWiNFO64 - REAL):
-#   Power: {combined['gpu_power_avg_w']:.1f} W
-#   Temp: {combined['gpu_temp_avg_c']:.1f} °C
-#   Memory: {combined['gpu_allocated_mb']:.0f} MB
-#   Energy: {combined['total_energy_wh']:.4f} Wh
-# """
-#     ax.text(0.1, 0.9, summary_text, transform=ax.transAxes,
-#             fontsize=10, verticalalignment='top', fontfamily='monospace',
-#             bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.5))
-
-#     plt.tight_layout()
-#     plt.savefig(output_path, dpi=300, bbox_inches='tight')
-#     print(f"✓ Visualization saved to: {output_path}")
+    print(f"\nCombined metrics saved to: {output_path}")
 
 
 def main():
@@ -397,11 +333,10 @@ def main():
     parser.add_argument('--training', required=True, help='training_metrics.json from Python script')
     parser.add_argument('--hwinfo',   required=True, help='HWiNFO64 CSV file')
     parser.add_argument('--output',   default='complete_training_metrics.json', help='Output JSON file')
-    # parser.add_argument('--graph',    default='training_metrics_graph.png',     help='Output graph file')
     args = parser.parse_args()
 
     print("=" * 70)
-    print("📊 COMBINING TRAINING METRICS + HWINFO64 GPU DATA")
+    print("COMBINING TRAINING METRICS + HWINFO64 GPU DATA")
     print("=" * 70)
 
     hwinfo_df = load_hwinfo_csv(args.hwinfo)
@@ -415,10 +350,9 @@ def main():
         return
 
     enhanced_history = match_hwinfo_to_epochs(hwinfo_df, training_data)
-    combined         = combine_metrics(training_data, hwinfo_summary, enhanced_history)
+    combined = combine_metrics(training_data, hwinfo_summary, enhanced_history)
 
     save_combined_metrics(combined, args.output)
-    # create_visualization(combined['summary'], args.graph)
 
     print("\n" + "=" * 70)
     print("SUCCESS - ALL METRICS COLLECTED!")
