@@ -1,16 +1,22 @@
 {
+  "collection_date": "2026-04-24T14:42:39.280070",
+  "source": "Training + HWiNFO64",
   "summary": {
-    "final_accuracy": 75.69265924021708,
-    "final_val_accuracy": 60.66066066066066,
-    "final_val_loss": 2.7596688251476267,
-    "max_ram_mb": 521.75,
-    "max_gpu_allocated_mb": 0,
-    "average_power_watts": 0.0,
-    "total_energy_wh": 0.0,
+    "accuracy_percent": 75.69265924021708,
+    "val_accuracy_percent": 60.66066066066066,
+    "val_loss": 2.7596688251476267,
+    "ram_mb": 521.75,
     "total_time_seconds": 2441.8344588279724,
-    "gpu_type": "amd_directml",
-    "test_accuracy": 59.0,
-    "dataset_path": "general_assistant_dataset_update.csv"
+    "avg_inference_ms": 0,
+    "gpu_allocated_mb": 1164.289612358334,
+    "gpu_reserved_mb": 5238.862556846892,
+    "gpu_power_avg_w": 26.592867970836643,
+    "gpu_power_min_w": 4.0,
+    "gpu_power_max_w": 32.0,
+    "gpu_temp_avg_c": 48.78733848263914,
+    "gpu_temp_max_c": 54.0,
+    "total_energy_wh": 102.33822024110302,
+    "gpu_type": "amd_directml"
   },
   "history": [
     {
@@ -22,11 +28,11 @@
       "time_seconds": 11.75606393814087,
       "timestamp": "2026-04-24T13:51:42.893341",
       "ram_mb": 381.0859375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.1363636363637,
+      "gpu_reserved_mb": 5223.454545454545,
+      "power_watts": 24.818181818181817,
+      "energy_wh": 0.08104559230081962,
+      "temperature_c": 37.40909090909091
     },
     {
       "epoch": 2,
@@ -37,11 +43,11 @@
       "time_seconds": 23.804837465286255,
       "timestamp": "2026-04-24T13:51:54.942115",
       "ram_mb": 383.234375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.594202898550726,
+      "energy_wh": 0.09904829123361868,
+      "temperature_c": 38.53623188405797
     },
     {
       "epoch": 3,
@@ -52,11 +58,11 @@
       "time_seconds": 35.88895106315613,
       "timestamp": "2026-04-24T13:52:07.026228",
       "ram_mb": 385.16796875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.455882352941178,
+      "energy_wh": 0.09887450791067548,
+      "temperature_c": 39.11764705882353
     },
     {
       "epoch": 4,
@@ -67,11 +73,11 @@
       "time_seconds": 47.91896891593933,
       "timestamp": "2026-04-24T13:52:19.056246",
       "ram_mb": 386.953125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.61764705882353,
+      "energy_wh": 0.09897245079863304,
+      "temperature_c": 39.86764705882353
     },
     {
       "epoch": 5,
@@ -82,11 +88,11 @@
       "time_seconds": 60.0221266746521,
       "timestamp": "2026-04-24T13:52:31.159404",
       "ram_mb": 388.8359375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.405797101449274,
+      "energy_wh": 0.09886194481653868,
+      "temperature_c": 40.26086956521739
     },
     {
       "epoch": 6,
@@ -97,11 +103,11 @@
       "time_seconds": 72.09099864959717,
       "timestamp": "2026-04-24T13:52:43.228276",
       "ram_mb": 390.9375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.347826086956523,
+      "energy_wh": 0.09838754327400871,
+      "temperature_c": 40.73913043478261
     },
     {
       "epoch": 7,
@@ -112,11 +118,11 @@
       "time_seconds": 84.21293210983276,
       "timestamp": "2026-04-24T13:52:55.350209",
       "ram_mb": 392.6328125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.264705882352942,
+      "energy_wh": 0.09854022706645767,
+      "temperature_c": 41.23529411764706
     },
     {
       "epoch": 8,
@@ -127,11 +133,11 @@
       "time_seconds": 96.29977440834045,
       "timestamp": "2026-04-24T13:53:07.437052",
       "ram_mb": 394.640625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.07246376811594,
+      "energy_wh": 0.09760952355397112,
+      "temperature_c": 41.78260869565217
     },
     {
       "epoch": 9,
@@ -142,11 +148,11 @@
       "time_seconds": 108.39178013801575,
       "timestamp": "2026-04-24T13:53:19.529057",
       "ram_mb": 396.55859375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.191176470588236,
+      "energy_wh": 0.0980499647606432,
+      "temperature_c": 42.088235294117645
     },
     {
       "epoch": 10,
@@ -157,11 +163,11 @@
       "time_seconds": 120.55474042892456,
       "timestamp": "2026-04-24T13:53:31.692018",
       "ram_mb": 398.40234375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.043478260869566,
+      "energy_wh": 0.09812629799911941,
+      "temperature_c": 42.34782608695652
     },
     {
       "epoch": 11,
@@ -172,11 +178,11 @@
       "time_seconds": 132.75064325332642,
       "timestamp": "2026-04-24T13:53:43.887920",
       "ram_mb": 400.18359375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.0,
+      "energy_wh": 0.09824477275212605,
+      "temperature_c": 43.01428571428571
     },
     {
       "epoch": 12,
@@ -187,11 +193,11 @@
       "time_seconds": 144.90328979492188,
       "timestamp": "2026-04-24T13:53:56.040567",
       "ram_mb": 401.94921875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.17391304347826,
+      "energy_wh": 0.09848340373684243,
+      "temperature_c": 43.27536231884058
     },
     {
       "epoch": 13,
@@ -202,11 +208,11 @@
       "time_seconds": 156.80879306793213,
       "timestamp": "2026-04-24T13:54:07.946070",
       "ram_mb": 403.58203125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.791044776119403,
+      "energy_wh": 0.09521441050429842,
+      "temperature_c": 43.865671641791046
     },
     {
       "epoch": 14,
@@ -217,11 +223,11 @@
       "time_seconds": 168.80503487586975,
       "timestamp": "2026-04-24T13:54:19.942312",
       "ram_mb": 405.1484375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.61764705882353,
+      "energy_wh": 0.09536228169218387,
+      "temperature_c": 44.294117647058826
     },
     {
       "epoch": 15,
@@ -232,11 +238,11 @@
       "time_seconds": 180.77780675888062,
       "timestamp": "2026-04-24T13:54:31.915084",
       "ram_mb": 407.85546875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.823529411764707,
+      "energy_wh": 0.095860428475087,
+      "temperature_c": 44.76470588235294
     },
     {
       "epoch": 16,
@@ -247,11 +253,11 @@
       "time_seconds": 192.76736760139465,
       "timestamp": "2026-04-24T13:54:43.904645",
       "ram_mb": 409.0390625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.0,
+      "energy_wh": 0.09658257345358531,
+      "temperature_c": 44.89705882352941
     },
     {
       "epoch": 17,
@@ -262,11 +268,11 @@
       "time_seconds": 204.67571139335632,
       "timestamp": "2026-04-24T13:54:55.812989",
       "ram_mb": 411.4296875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.13235294117647,
+      "energy_wh": 0.09636613174785975,
+      "temperature_c": 45.10294117647059
     },
     {
       "epoch": 18,
@@ -277,11 +283,11 @@
       "time_seconds": 216.5552589893341,
       "timestamp": "2026-04-24T13:55:07.692536",
       "ram_mb": 412.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.01492537313433,
+      "energy_wh": 0.0957456074899702,
+      "temperature_c": 45.35820895522388
     },
     {
       "epoch": 19,
@@ -292,11 +298,11 @@
       "time_seconds": 228.60072898864746,
       "timestamp": "2026-04-24T13:55:19.738006",
       "ram_mb": 414.625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.029411764705884,
+      "energy_wh": 0.09713136347485525,
+      "temperature_c": 45.779411764705884
     },
     {
       "epoch": 20,
@@ -307,11 +313,11 @@
       "time_seconds": 240.7517261505127,
       "timestamp": "2026-04-24T13:55:31.889003",
       "ram_mb": 416.5703125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.159420289855074,
+      "energy_wh": 0.0984211203287957,
+      "temperature_c": 45.98550724637681
     },
     {
       "epoch": 21,
@@ -322,11 +328,11 @@
       "time_seconds": 252.74270510673523,
       "timestamp": "2026-04-24T13:55:43.879982",
       "ram_mb": 418.546875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.897058823529413,
+      "energy_wh": 0.0962511178471294,
+      "temperature_c": 46.279411764705884
     },
     {
       "epoch": 22,
@@ -337,11 +343,11 @@
       "time_seconds": 264.96670603752136,
       "timestamp": "2026-04-24T13:55:56.103983",
       "ram_mb": 402.63671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.1,
+      "energy_wh": 0.09881067419052125,
+      "temperature_c": 46.642857142857146
     },
     {
       "epoch": 23,
@@ -352,11 +358,11 @@
       "time_seconds": 277.07884526252747,
       "timestamp": "2026-04-24T13:56:08.216122",
       "ram_mb": 404.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.304347826086957,
+      "energy_wh": 0.09859398354654728,
+      "temperature_c": 46.98550724637681
     },
     {
       "epoch": 24,
@@ -367,11 +373,11 @@
       "time_seconds": 289.1970729827881,
       "timestamp": "2026-04-24T13:56:20.334350",
       "ram_mb": 406.625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.073529411764707,
+      "energy_wh": 0.09786656945651652,
+      "temperature_c": 47.05882352941177
     },
     {
       "epoch": 25,
@@ -382,11 +388,11 @@
       "time_seconds": 301.2946548461914,
       "timestamp": "2026-04-24T13:56:32.431932",
       "ram_mb": 408.60546875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.91304347826087,
+      "energy_wh": 0.09716053066622232,
+      "temperature_c": 47.333333333333336
     },
     {
       "epoch": 26,
@@ -397,11 +403,11 @@
       "time_seconds": 313.39639019966125,
       "timestamp": "2026-04-24T13:56:44.533667",
       "ram_mb": 410.3828125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.753623188405797,
+      "energy_wh": 0.09665798285541134,
+      "temperature_c": 47.507246376811594
     },
     {
       "epoch": 27,
@@ -412,11 +418,11 @@
       "time_seconds": 325.47271823883057,
       "timestamp": "2026-04-24T13:56:56.609995",
       "ram_mb": 412.29296875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.66176470588235,
+      "energy_wh": 0.09614690910270011,
+      "temperature_c": 47.98529411764706
     },
     {
       "epoch": 28,
@@ -427,11 +433,11 @@
       "time_seconds": 337.628714799881,
       "timestamp": "2026-04-24T13:57:08.765992",
       "ram_mb": 413.984375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.92753623188406,
+      "energy_wh": 0.09767861970956776,
+      "temperature_c": 48.04347826086956
     },
     {
       "epoch": 29,
@@ -442,11 +448,11 @@
       "time_seconds": 349.80593371391296,
       "timestamp": "2026-04-24T13:57:20.943211",
       "ram_mb": 416.12109375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.666666666666668,
+      "energy_wh": 0.09696674320432874,
+      "temperature_c": 48.43478260869565
     },
     {
       "epoch": 30,
@@ -457,11 +463,11 @@
       "time_seconds": 361.93437790870667,
       "timestamp": "2026-04-24T13:57:33.071655",
       "ram_mb": 417.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.91304347826087,
+      "energy_wh": 0.09740839842436971,
+      "temperature_c": 48.507246376811594
     },
     {
       "epoch": 31,
@@ -472,11 +478,11 @@
       "time_seconds": 374.0988619327545,
       "timestamp": "2026-04-24T13:57:45.236139",
       "ram_mb": 419.66015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.07246376811594,
+      "energy_wh": 0.09823653362415455,
+      "temperature_c": 48.666666666666664
     },
     {
       "epoch": 32,
@@ -487,11 +493,11 @@
       "time_seconds": 386.2888879776001,
       "timestamp": "2026-04-24T13:57:57.426165",
       "ram_mb": 421.67578125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.0,
+      "energy_wh": 0.09819743202792273,
+      "temperature_c": 48.869565217391305
     },
     {
       "epoch": 33,
@@ -502,11 +508,11 @@
       "time_seconds": 398.50300431251526,
       "timestamp": "2026-04-24T13:58:09.640281",
       "ram_mb": 423.53125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 29.028985507246375,
+      "energy_wh": 0.09848983501946484,
+      "temperature_c": 49.08695652173913
     },
     {
       "epoch": 34,
@@ -517,11 +523,11 @@
       "time_seconds": 410.6878180503845,
       "timestamp": "2026-04-24T13:58:21.825095",
       "ram_mb": 425.40234375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.728571428571428,
+      "energy_wh": 0.09723674772561543,
+      "temperature_c": 49.17142857142857
     },
     {
       "epoch": 35,
@@ -532,11 +538,11 @@
       "time_seconds": 422.8508412837982,
       "timestamp": "2026-04-24T13:58:33.988118",
       "ram_mb": 427.1015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.73913043478261,
+      "energy_wh": 0.0970985308851021,
+      "temperature_c": 49.43478260869565
     },
     {
       "epoch": 36,
@@ -547,11 +553,11 @@
       "time_seconds": 434.89279079437256,
       "timestamp": "2026-04-24T13:58:46.030068",
       "ram_mb": 429.08984375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.852941176470587,
+      "energy_wh": 0.09651268357739728,
+      "temperature_c": 49.544117647058826
     },
     {
       "epoch": 37,
@@ -562,11 +568,11 @@
       "time_seconds": 447.0055603981018,
       "timestamp": "2026-04-24T13:58:58.142837",
       "ram_mb": 431.00390625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.81159420289855,
+      "energy_wh": 0.09694116735995872,
+      "temperature_c": 49.7536231884058
     },
     {
       "epoch": 38,
@@ -577,11 +583,11 @@
       "time_seconds": 459.15273451805115,
       "timestamp": "2026-04-24T13:59:10.290012",
       "ram_mb": 432.6015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.797101449275363,
+      "energy_wh": 0.09716761262616481,
+      "temperature_c": 49.94202898550725
     },
     {
       "epoch": 39,
@@ -592,11 +598,11 @@
       "time_seconds": 471.2771489620209,
       "timestamp": "2026-04-24T13:59:22.414426",
       "ram_mb": 434.89453125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.75,
+      "energy_wh": 0.09682692090670268,
+      "temperature_c": 49.970588235294116
     },
     {
       "epoch": 40,
@@ -607,11 +613,11 @@
       "time_seconds": 483.29877829551697,
       "timestamp": "2026-04-24T13:59:34.437055",
       "ram_mb": 436.453125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.63768115942029,
+      "energy_wh": 0.0956309966303876,
+      "temperature_c": 50.10144927536232
     },
     {
       "epoch": 41,
@@ -622,11 +628,11 @@
       "time_seconds": 495.2631220817566,
       "timestamp": "2026-04-24T13:59:46.400399",
       "ram_mb": 438.33984375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.955223880597014,
+      "energy_wh": 0.09623062580972168,
+      "temperature_c": 50.223880597014926
     },
     {
       "epoch": 42,
@@ -637,11 +643,11 @@
       "time_seconds": 507.3838584423065,
       "timestamp": "2026-04-24T13:59:58.521136",
       "ram_mb": 439.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.63768115942029,
+      "energy_wh": 0.09641938425300585,
+      "temperature_c": 50.289855072463766
     },
     {
       "epoch": 43,
@@ -652,11 +658,11 @@
       "time_seconds": 519.5342755317688,
       "timestamp": "2026-04-24T14:00:10.671552",
       "ram_mb": 442.078125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1152.1884057971015,
+      "gpu_reserved_mb": 5225.246376811594,
+      "power_watts": 26.840579710144926,
+      "energy_wh": 0.09059006622256095,
+      "temperature_c": 50.21739130434783
     },
     {
       "epoch": 44,
@@ -667,11 +673,11 @@
       "time_seconds": 531.5950317382812,
       "timestamp": "2026-04-24T14:00:22.732309",
       "ram_mb": 444.125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1149.5942028985507,
+      "gpu_reserved_mb": 5223.405797101449,
+      "power_watts": 28.956521739130434,
+      "energy_wh": 0.09701043035673058,
+      "temperature_c": 50.405797101449274
     },
     {
       "epoch": 45,
@@ -682,11 +688,11 @@
       "time_seconds": 543.5902364253998,
       "timestamp": "2026-04-24T14:00:34.727514",
       "ram_mb": 445.91015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.0,
+      "gpu_reserved_mb": 5224.0,
+      "power_watts": 29.044117647058822,
+      "energy_wh": 0.09677503781478389,
+      "temperature_c": 50.661764705882355
     },
     {
       "epoch": 46,
@@ -697,11 +703,11 @@
       "time_seconds": 555.6907467842102,
       "timestamp": "2026-04-24T14:00:46.828024",
       "ram_mb": 447.53515625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.0,
+      "gpu_reserved_mb": 5224.0,
+      "power_watts": 28.970588235294116,
+      "energy_wh": 0.09737747306722441,
+      "temperature_c": 50.86764705882353
     },
     {
       "epoch": 47,
@@ -712,11 +718,11 @@
       "time_seconds": 567.7987234592438,
       "timestamp": "2026-04-24T14:00:58.936001",
       "ram_mb": 449.38671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.0,
+      "gpu_reserved_mb": 5224.0,
+      "power_watts": 28.89855072463768,
+      "energy_wh": 0.09719527169894096,
+      "temperature_c": 50.89855072463768
     },
     {
       "epoch": 48,
@@ -727,11 +733,11 @@
       "time_seconds": 579.982994556427,
       "timestamp": "2026-04-24T14:01:11.120272",
       "ram_mb": 450.94921875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.0,
+      "gpu_reserved_mb": 5224.0,
+      "power_watts": 28.81159420289855,
+      "energy_wh": 0.0975134095861524,
+      "temperature_c": 50.971014492753625
     },
     {
       "epoch": 49,
@@ -742,11 +748,11 @@
       "time_seconds": 592.3707113265991,
       "timestamp": "2026-04-24T14:01:23.507988",
       "ram_mb": 453.1484375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.0,
+      "gpu_reserved_mb": 5224.0,
+      "power_watts": 28.757142857142856,
+      "energy_wh": 0.09895426134268442,
+      "temperature_c": 51.128571428571426
     },
     {
       "epoch": 50,
@@ -757,11 +763,11 @@
       "time_seconds": 604.6942882537842,
       "timestamp": "2026-04-24T14:01:35.831565",
       "ram_mb": 455.1015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.0,
+      "gpu_reserved_mb": 5224.0,
+      "power_watts": 28.914285714285715,
+      "energy_wh": 0.09897984008183555,
+      "temperature_c": 51.114285714285714
     },
     {
       "epoch": 51,
@@ -772,11 +778,11 @@
       "time_seconds": 616.7967460155487,
       "timestamp": "2026-04-24T14:01:47.934023",
       "ram_mb": 456.7734375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.0,
+      "gpu_reserved_mb": 5224.0,
+      "power_watts": 28.840579710144926,
+      "energy_wh": 0.09695608271300887,
+      "temperature_c": 51.27536231884058
     },
     {
       "epoch": 52,
@@ -787,11 +793,11 @@
       "time_seconds": 629.0097122192383,
       "timestamp": "2026-04-24T14:02:00.146989",
       "ram_mb": 458.7265625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1150.0,
+      "gpu_reserved_mb": 5224.0,
+      "power_watts": 28.985507246376812,
+      "energy_wh": 0.09833306122133313,
+      "temperature_c": 51.53623188405797
     },
     {
       "epoch": 53,
@@ -802,11 +808,11 @@
       "time_seconds": 641.2532773017883,
       "timestamp": "2026-04-24T14:02:12.390554",
       "ram_mb": 460.66796875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1151.7571428571428,
+      "gpu_reserved_mb": 5225.0,
+      "power_watts": 28.585714285714285,
+      "energy_wh": 0.0972197370245343,
+      "temperature_c": 51.628571428571426
     },
     {
       "epoch": 54,
@@ -817,11 +823,11 @@
       "time_seconds": 653.4791767597198,
       "timestamp": "2026-04-24T14:02:24.616454",
       "ram_mb": 462.3359375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.681159420289855,
+      "energy_wh": 0.09740360316926922,
+      "temperature_c": 51.85507246376812
     },
     {
       "epoch": 55,
@@ -832,11 +838,11 @@
       "time_seconds": 665.5438520908356,
       "timestamp": "2026-04-24T14:02:36.681129",
       "ram_mb": 464.2109375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.608695652173914,
+      "energy_wh": 0.09587628463616119,
+      "temperature_c": 51.85507246376812
     },
     {
       "epoch": 56,
@@ -847,11 +853,11 @@
       "time_seconds": 677.693749666214,
       "timestamp": "2026-04-24T14:02:48.831027",
       "ram_mb": 465.76953125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.852941176470587,
+      "energy_wh": 0.09737785556737114,
+      "temperature_c": 52.0
     },
     {
       "epoch": 57,
@@ -862,11 +868,11 @@
       "time_seconds": 689.9200482368469,
       "timestamp": "2026-04-24T14:03:01.057325",
       "ram_mb": 468.0625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.65714285714286,
+      "energy_wh": 0.09732521798686376,
+      "temperature_c": 52.08571428571429
     },
     {
       "epoch": 58,
@@ -877,11 +883,11 @@
       "time_seconds": 702.2369887828827,
       "timestamp": "2026-04-24T14:03:13.374266",
       "ram_mb": 469.49609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.757142857142856,
+      "energy_wh": 0.09838889412369047,
+      "temperature_c": 52.142857142857146
     },
     {
       "epoch": 59,
@@ -892,11 +898,11 @@
       "time_seconds": 714.5111484527588,
       "timestamp": "2026-04-24T14:03:25.648426",
       "ram_mb": 471.48046875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.405797101449274,
+      "energy_wh": 0.09684924699258113,
+      "temperature_c": 52.20289855072464
     },
     {
       "epoch": 60,
@@ -907,11 +913,11 @@
       "time_seconds": 727.1897580623627,
       "timestamp": "2026-04-24T14:03:38.327035",
       "ram_mb": 473.41796875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.5,
+      "energy_wh": 0.10037232607603074,
+      "temperature_c": 52.361111111111114
     },
     {
       "epoch": 61,
@@ -922,11 +928,11 @@
       "time_seconds": 740.5064461231232,
       "timestamp": "2026-04-24T14:03:51.643723",
       "ram_mb": 475.05078125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.75,
+      "energy_wh": 0.10634855048524008,
+      "temperature_c": 52.51315789473684
     },
     {
       "epoch": 62,
@@ -937,11 +943,11 @@
       "time_seconds": 752.7780563831329,
       "timestamp": "2026-04-24T14:04:03.915333",
       "ram_mb": 477.31640625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.695652173913043,
+      "energy_wh": 0.0978171832319619,
+      "temperature_c": 52.44927536231884
     },
     {
       "epoch": 63,
@@ -952,11 +958,11 @@
       "time_seconds": 765.1099097728729,
       "timestamp": "2026-04-24T14:04:16.247187",
       "ram_mb": 478.66015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.771428571428572,
+      "energy_wh": 0.0985569552656204,
+      "temperature_c": 52.714285714285715
     },
     {
       "epoch": 64,
@@ -967,11 +973,11 @@
       "time_seconds": 777.2774982452393,
       "timestamp": "2026-04-24T14:04:28.414775",
       "ram_mb": 480.82421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.492753623188406,
+      "energy_wh": 0.0963022501476337,
+      "temperature_c": 52.42028985507246
     },
     {
       "epoch": 65,
@@ -982,11 +988,11 @@
       "time_seconds": 789.3747692108154,
       "timestamp": "2026-04-24T14:04:40.512046",
       "ram_mb": 482.2265625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.420289855072465,
+      "energy_wh": 0.09550220758250753,
+      "temperature_c": 49.3768115942029
     },
     {
       "epoch": 66,
@@ -997,11 +1003,11 @@
       "time_seconds": 801.4913461208344,
       "timestamp": "2026-04-24T14:04:52.628623",
       "ram_mb": 484.30078125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.36231884057971,
+      "energy_wh": 0.09545950488287853,
+      "temperature_c": 47.17391304347826
     },
     {
       "epoch": 67,
@@ -1012,11 +1018,11 @@
       "time_seconds": 813.6040689945221,
       "timestamp": "2026-04-24T14:05:04.741346",
       "ram_mb": 485.9296875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.27536231884058,
+      "energy_wh": 0.09513656331145244,
+      "temperature_c": 47.63768115942029
     },
     {
       "epoch": 68,
@@ -1027,11 +1033,11 @@
       "time_seconds": 825.810977935791,
       "timestamp": "2026-04-24T14:05:16.948255",
       "ram_mb": 488.00390625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.536231884057973,
+      "energy_wh": 0.0967608844821196,
+      "temperature_c": 48.17391304347826
     },
     {
       "epoch": 69,
@@ -1042,11 +1048,11 @@
       "time_seconds": 837.9609770774841,
       "timestamp": "2026-04-24T14:05:29.098254",
       "ram_mb": 489.6640625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.91304347826087,
+      "energy_wh": 0.0975815148457237,
+      "temperature_c": 48.666666666666664
     },
     {
       "epoch": 70,
@@ -1057,11 +1063,11 @@
       "time_seconds": 850.0943100452423,
       "timestamp": "2026-04-24T14:05:41.231587",
       "ram_mb": 491.41796875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.768115942028984,
+      "energy_wh": 0.09695920266103053,
+      "temperature_c": 49.072463768115945
     },
     {
       "epoch": 71,
@@ -1072,11 +1078,11 @@
       "time_seconds": 862.1449244022369,
       "timestamp": "2026-04-24T14:05:53.282202",
       "ram_mb": 493.2421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.0,
+      "gpu_reserved_mb": 5226.0,
+      "power_watts": 28.794117647058822,
+      "energy_wh": 0.09638522430962207,
+      "temperature_c": 49.38235294117647
     },
     {
       "epoch": 72,
@@ -1087,11 +1093,11 @@
       "time_seconds": 874.3197405338287,
       "timestamp": "2026-04-24T14:06:05.457018",
       "ram_mb": 494.99609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1153.8695652173913,
+      "gpu_reserved_mb": 5227.347826086957,
+      "power_watts": 29.10144927536232,
+      "energy_wh": 0.09841799835843934,
+      "temperature_c": 49.666666666666664
     },
     {
       "epoch": 73,
@@ -1102,11 +1108,11 @@
       "time_seconds": 886.5574848651886,
       "timestamp": "2026-04-24T14:06:17.694762",
       "ram_mb": 497.9296875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1155.0,
+      "gpu_reserved_mb": 5229.0,
+      "power_watts": 28.971014492753625,
+      "energy_wh": 0.09848329677290003,
+      "temperature_c": 49.94202898550725
     },
     {
       "epoch": 74,
@@ -1117,11 +1123,11 @@
       "time_seconds": 898.7909052371979,
       "timestamp": "2026-04-24T14:06:29.928182",
       "ram_mb": 499.1640625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1155.0,
+      "gpu_reserved_mb": 5229.0,
+      "power_watts": 28.9,
+      "energy_wh": 0.09820718020863002,
+      "temperature_c": 50.0
     },
     {
       "epoch": 75,
@@ -1132,11 +1138,11 @@
       "time_seconds": 910.8387551307678,
       "timestamp": "2026-04-24T14:06:41.976032",
       "ram_mb": 501.6875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1155.0,
+      "gpu_reserved_mb": 5229.0,
+      "power_watts": 28.985294117647058,
+      "energy_wh": 0.09700290906955214,
+      "temperature_c": 50.35294117647059
     },
     {
       "epoch": 76,
@@ -1147,11 +1153,11 @@
       "time_seconds": 922.9989376068115,
       "timestamp": "2026-04-24T14:06:54.136215",
       "ram_mb": 503.18359375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1155.0,
+      "gpu_reserved_mb": 5229.0,
+      "power_watts": 28.608695652173914,
+      "energy_wh": 0.0966352665366758,
+      "temperature_c": 50.65217391304348
     },
     {
       "epoch": 77,
@@ -1162,11 +1168,11 @@
       "time_seconds": 935.327910900116,
       "timestamp": "2026-04-24T14:07:06.465188",
       "ram_mb": 504.7265625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1155.0,
+      "gpu_reserved_mb": 5229.0,
+      "power_watts": 28.742857142857144,
+      "energy_wh": 0.09843608835765294,
+      "temperature_c": 50.885714285714286
     },
     {
       "epoch": 78,
@@ -1177,11 +1183,11 @@
       "time_seconds": 947.5457742214203,
       "timestamp": "2026-04-24T14:07:18.683051",
       "ram_mb": 506.54296875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1155.0,
+      "gpu_reserved_mb": 5229.0,
+      "power_watts": 28.72463768115942,
+      "energy_wh": 0.09748713809510937,
+      "temperature_c": 51.0
     },
     {
       "epoch": 79,
@@ -1192,11 +1198,11 @@
       "time_seconds": 959.8019306659698,
       "timestamp": "2026-04-24T14:07:30.939208",
       "ram_mb": 507.51171875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1156.8,
+      "gpu_reserved_mb": 5230.8,
+      "power_watts": 28.757142857142856,
+      "energy_wh": 0.0979033449320566,
+      "temperature_c": 51.1
     },
     {
       "epoch": 80,
@@ -1207,11 +1213,11 @@
       "time_seconds": 971.9679794311523,
       "timestamp": "2026-04-24T14:07:43.105256",
       "ram_mb": 508.88671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1157.0,
+      "gpu_reserved_mb": 5231.0,
+      "power_watts": 28.695652173913043,
+      "energy_wh": 0.09697575102681699,
+      "temperature_c": 51.289855072463766
     },
     {
       "epoch": 81,
@@ -1222,11 +1228,11 @@
       "time_seconds": 984.2905235290527,
       "timestamp": "2026-04-24T14:07:55.427801",
       "ram_mb": 509.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1157.0,
+      "gpu_reserved_mb": 5231.971428571429,
+      "power_watts": 28.65714285714286,
+      "energy_wh": 0.09809136293804835,
+      "temperature_c": 51.628571428571426
     },
     {
       "epoch": 82,
@@ -1237,11 +1243,11 @@
       "time_seconds": 996.5590896606445,
       "timestamp": "2026-04-24T14:08:07.696367",
       "ram_mb": 510.92578125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1157.0,
+      "gpu_reserved_mb": 5232.0,
+      "power_watts": 28.7,
+      "energy_wh": 0.09780773554907904,
+      "temperature_c": 51.74285714285714
     },
     {
       "epoch": 83,
@@ -1252,11 +1258,11 @@
       "time_seconds": 1009.0479502677917,
       "timestamp": "2026-04-24T14:08:20.185227",
       "ram_mb": 511.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1157.0,
+      "gpu_reserved_mb": 5232.0,
+      "power_watts": 28.7,
+      "energy_wh": 0.09956397206253476,
+      "temperature_c": 51.77142857142857
     },
     {
       "epoch": 84,
@@ -1267,11 +1273,11 @@
       "time_seconds": 1021.2505693435669,
       "timestamp": "2026-04-24T14:08:32.387846",
       "ram_mb": 512.83984375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1157.0,
+      "gpu_reserved_mb": 5232.0,
+      "power_watts": 28.97142857142857,
+      "energy_wh": 0.09820202970504761,
+      "temperature_c": 51.98571428571429
     },
     {
       "epoch": 85,
@@ -1282,11 +1288,11 @@
       "time_seconds": 1033.4950683116913,
       "timestamp": "2026-04-24T14:08:44.632345",
       "ram_mb": 513.57421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1157.0,
+      "gpu_reserved_mb": 5232.0,
+      "power_watts": 28.956521739130434,
+      "energy_wh": 0.09848836126534835,
+      "temperature_c": 52.10144927536232
     },
     {
       "epoch": 86,
@@ -1297,11 +1303,11 @@
       "time_seconds": 1045.7166240215302,
       "timestamp": "2026-04-24T14:08:56.853901",
       "ram_mb": 514.40234375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1161.608695652174,
+      "gpu_reserved_mb": 5236.0,
+      "power_watts": 27.492753623188406,
+      "energy_wh": 0.09333450556185319,
+      "temperature_c": 52.17391304347826
     },
     {
       "epoch": 87,
@@ -1312,11 +1318,11 @@
       "time_seconds": 1057.9655656814575,
       "timestamp": "2026-04-24T14:09:09.102843",
       "ram_mb": 514.7578125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1164.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.042857142857144,
+      "energy_wh": 0.09881785077235056,
+      "temperature_c": 52.457142857142856
     },
     {
       "epoch": 88,
@@ -1327,11 +1333,11 @@
       "time_seconds": 1070.2538905143738,
       "timestamp": "2026-04-24T14:09:21.391167",
       "ram_mb": 515.01953125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1164.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.814285714285713,
+      "energy_wh": 0.09835536185711148,
+      "temperature_c": 50.957142857142856
     },
     {
       "epoch": 89,
@@ -1342,11 +1348,11 @@
       "time_seconds": 1082.268010377884,
       "timestamp": "2026-04-24T14:09:33.405287",
       "ram_mb": 515.5546875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1164.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.764705882352942,
+      "energy_wh": 0.09599517341922312,
+      "temperature_c": 48.279411764705884
     },
     {
       "epoch": 90,
@@ -1357,11 +1363,11 @@
       "time_seconds": 1094.3267583847046,
       "timestamp": "2026-04-24T14:09:45.464036",
       "ram_mb": 516.35546875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.8529411764705,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.441176470588236,
+      "energy_wh": 0.09526805002120585,
+      "temperature_c": 48.35294117647059
     },
     {
       "epoch": 91,
@@ -1372,11 +1378,11 @@
       "time_seconds": 1106.460186958313,
       "timestamp": "2026-04-24T14:09:57.597464",
       "ram_mb": 516.359375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.463768115942027,
+      "energy_wh": 0.09593419371403741,
+      "temperature_c": 48.869565217391305
     },
     {
       "epoch": 92,
@@ -1387,11 +1393,11 @@
       "time_seconds": 1118.6427853107452,
       "timestamp": "2026-04-24T14:10:09.780062",
       "ram_mb": 516.87109375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.71014492753623,
+      "energy_wh": 0.09715671230341501,
+      "temperature_c": 49.130434782608695
     },
     {
       "epoch": 93,
@@ -1402,11 +1408,11 @@
       "time_seconds": 1130.7135045528412,
       "timestamp": "2026-04-24T14:10:21.850782",
       "ram_mb": 516.90625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.507246376811594,
+      "energy_wh": 0.09558415760548603,
+      "temperature_c": 49.79710144927536
     },
     {
       "epoch": 94,
@@ -1417,11 +1423,11 @@
       "time_seconds": 1142.7609646320343,
       "timestamp": "2026-04-24T14:10:33.898242",
       "ram_mb": 517.23046875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.83823529411765,
+      "energy_wh": 0.09650763568340563,
+      "temperature_c": 49.9264705882353
     },
     {
       "epoch": 95,
@@ -1432,11 +1438,11 @@
       "time_seconds": 1154.8797311782837,
       "timestamp": "2026-04-24T14:10:46.017008",
       "ram_mb": 518.0078125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.82608695652174,
+      "energy_wh": 0.09703794951888098,
+      "temperature_c": 50.08695652173913
     },
     {
       "epoch": 96,
@@ -1447,11 +1453,11 @@
       "time_seconds": 1167.1139888763428,
       "timestamp": "2026-04-24T14:10:58.251266",
       "ram_mb": 518.07421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.956521739130434,
+      "energy_wh": 0.09840598583221435,
+      "temperature_c": 50.47826086956522
     },
     {
       "epoch": 97,
@@ -1462,11 +1468,11 @@
       "time_seconds": 1179.3858592510223,
       "timestamp": "2026-04-24T14:11:10.523136",
       "ram_mb": 518.12109375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.914285714285715,
+      "energy_wh": 0.09856454618393429,
+      "temperature_c": 50.7
     },
     {
       "epoch": 98,
@@ -1477,11 +1483,11 @@
       "time_seconds": 1191.9880039691925,
       "timestamp": "2026-04-24T14:11:23.125281",
       "ram_mb": 518.375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.943661971830984,
+      "energy_wh": 0.10132006023411459,
+      "temperature_c": 50.91549295774648
     },
     {
       "epoch": 99,
@@ -1492,11 +1498,11 @@
       "time_seconds": 1204.3418712615967,
       "timestamp": "2026-04-24T14:11:35.479148",
       "ram_mb": 518.62890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.085714285714285,
+      "energy_wh": 0.09981140399736071,
+      "temperature_c": 51.128571428571426
     },
     {
       "epoch": 100,
@@ -1507,11 +1513,11 @@
       "time_seconds": 1216.5289723873138,
       "timestamp": "2026-04-24T14:11:47.666249",
       "ram_mb": 518.62890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.87142857142857,
+      "energy_wh": 0.0977386165677555,
+      "temperature_c": 51.4
     },
     {
       "epoch": 101,
@@ -1522,11 +1528,11 @@
       "time_seconds": 1228.7978644371033,
       "timestamp": "2026-04-24T14:11:59.935142",
       "ram_mb": 518.88671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.855072463768117,
+      "energy_wh": 0.09833882476300625,
+      "temperature_c": 51.55072463768116
     },
     {
       "epoch": 102,
@@ -1537,11 +1543,11 @@
       "time_seconds": 1241.1608781814575,
       "timestamp": "2026-04-24T14:12:12.298155",
       "ram_mb": 519.01171875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.985714285714284,
+      "energy_wh": 0.09954188447339193,
+      "temperature_c": 51.74285714285714
     },
     {
       "epoch": 103,
@@ -1552,11 +1558,11 @@
       "time_seconds": 1253.478138923645,
       "timestamp": "2026-04-24T14:12:24.615416",
       "ram_mb": 519.01171875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.985714285714284,
+      "energy_wh": 0.09917350018213665,
+      "temperature_c": 51.94285714285714
     },
     {
       "epoch": 104,
@@ -1567,11 +1573,11 @@
       "time_seconds": 1265.6628069877625,
       "timestamp": "2026-04-24T14:12:36.800084",
       "ram_mb": 519.265625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.91304347826087,
+      "energy_wh": 0.09785995486277889,
+      "temperature_c": 52.01449275362319
     },
     {
       "epoch": 105,
@@ -1582,11 +1588,11 @@
       "time_seconds": 1277.8324904441833,
       "timestamp": "2026-04-24T14:12:48.969767",
       "ram_mb": 519.265625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.130434782608695,
+      "energy_wh": 0.09847449173673915,
+      "temperature_c": 52.15942028985507
     },
     {
       "epoch": 106,
@@ -1597,11 +1603,11 @@
       "time_seconds": 1290.1630487442017,
       "timestamp": "2026-04-24T14:13:01.300326",
       "ram_mb": 519.65625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.085714285714285,
+      "energy_wh": 0.09962308213824317,
+      "temperature_c": 52.371428571428574
     },
     {
       "epoch": 107,
@@ -1612,11 +1618,11 @@
       "time_seconds": 1302.6929507255554,
       "timestamp": "2026-04-24T14:13:13.830228",
       "ram_mb": 519.65625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.070422535211268,
+      "energy_wh": 0.10118042914520407,
+      "temperature_c": 52.521126760563384
     },
     {
       "epoch": 108,
@@ -1627,11 +1633,11 @@
       "time_seconds": 1315.1800322532654,
       "timestamp": "2026-04-24T14:13:26.317309",
       "ram_mb": 519.66015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.197183098591548,
+      "energy_wh": 0.1012743349254411,
+      "temperature_c": 52.59154929577465
     },
     {
       "epoch": 109,
@@ -1642,11 +1648,11 @@
       "time_seconds": 1327.4854452610016,
       "timestamp": "2026-04-24T14:13:38.622722",
       "ram_mb": 519.66015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.97142857142857,
+      "energy_wh": 0.09902927610987709,
+      "temperature_c": 50.08571428571429
     },
     {
       "epoch": 110,
@@ -1657,11 +1663,11 @@
       "time_seconds": 1339.861002445221,
       "timestamp": "2026-04-24T14:13:50.998279",
       "ram_mb": 519.76171875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.771428571428572,
+      "energy_wh": 0.09890623876594362,
+      "temperature_c": 48.01428571428571
     },
     {
       "epoch": 111,
@@ -1672,11 +1678,11 @@
       "time_seconds": 1352.210063457489,
       "timestamp": "2026-04-24T14:14:03.347341",
       "ram_mb": 519.765625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.885714285714286,
+      "energy_wh": 0.09908651336034138,
+      "temperature_c": 48.51428571428571
     },
     {
       "epoch": 112,
@@ -1687,11 +1693,11 @@
       "time_seconds": 1364.7714340686798,
       "timestamp": "2026-04-24T14:14:15.908711",
       "ram_mb": 519.765625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.86111111111111,
+      "energy_wh": 0.10070419803261757,
+      "temperature_c": 48.94444444444444
     },
     {
       "epoch": 113,
@@ -1702,11 +1708,11 @@
       "time_seconds": 1376.9737129211426,
       "timestamp": "2026-04-24T14:14:28.110990",
       "ram_mb": 519.83203125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.942028985507246,
+      "energy_wh": 0.09809964117700544,
+      "temperature_c": 49.3768115942029
     },
     {
       "epoch": 114,
@@ -1717,11 +1723,11 @@
       "time_seconds": 1389.0718994140625,
       "timestamp": "2026-04-24T14:14:40.209177",
       "ram_mb": 519.83203125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.08695652173913,
+      "energy_wh": 0.09774984014207037,
+      "temperature_c": 49.94202898550725
     },
     {
       "epoch": 115,
@@ -1732,11 +1738,11 @@
       "time_seconds": 1401.1688961982727,
       "timestamp": "2026-04-24T14:14:52.306173",
       "ram_mb": 519.83203125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.102941176470587,
+      "energy_wh": 0.09779394050633985,
+      "temperature_c": 50.0
     },
     {
       "epoch": 116,
@@ -1747,11 +1753,11 @@
       "time_seconds": 1413.3017547130585,
       "timestamp": "2026-04-24T14:15:04.439032",
       "ram_mb": 519.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.07246376811594,
+      "energy_wh": 0.09798113599299617,
+      "temperature_c": 50.405797101449274
     },
     {
       "epoch": 117,
@@ -1762,11 +1768,11 @@
       "time_seconds": 1425.3806960582733,
       "timestamp": "2026-04-24T14:15:16.517973",
       "ram_mb": 519.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.92753623188406,
+      "energy_wh": 0.09705944816847353,
+      "temperature_c": 50.73913043478261
     },
     {
       "epoch": 118,
@@ -1777,11 +1783,11 @@
       "time_seconds": 1437.4661073684692,
       "timestamp": "2026-04-24T14:15:28.603385",
       "ram_mb": 519.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.720588235294116,
+      "energy_wh": 0.09641670052619541,
+      "temperature_c": 50.94117647058823
     },
     {
       "epoch": 119,
@@ -1792,11 +1798,11 @@
       "time_seconds": 1449.5230560302734,
       "timestamp": "2026-04-24T14:15:40.660333",
       "ram_mb": 520.12890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.91304347826087,
+      "energy_wh": 0.09683418913164,
+      "temperature_c": 51.05797101449275
     },
     {
       "epoch": 120,
@@ -1807,11 +1813,11 @@
       "time_seconds": 1461.7188532352448,
       "timestamp": "2026-04-24T14:15:52.856130",
       "ram_mb": 520.1328125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.82608695652174,
+      "energy_wh": 0.09765475298183551,
+      "temperature_c": 51.289855072463766
     },
     {
       "epoch": 121,
@@ -1822,11 +1828,11 @@
       "time_seconds": 1473.8668811321259,
       "timestamp": "2026-04-24T14:16:05.004158",
       "ram_mb": 520.1484375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.91304347826087,
+      "energy_wh": 0.09756568298823591,
+      "temperature_c": 51.47826086956522
     },
     {
       "epoch": 122,
@@ -1837,11 +1843,11 @@
       "time_seconds": 1485.9678180217743,
       "timestamp": "2026-04-24T14:16:17.105095",
       "ram_mb": 520.1484375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.970588235294116,
+      "energy_wh": 0.09738090552535711,
+      "temperature_c": 51.80882352941177
     },
     {
       "epoch": 123,
@@ -1852,11 +1858,11 @@
       "time_seconds": 1498.212818622589,
       "timestamp": "2026-04-24T14:16:29.350096",
       "ram_mb": 520.1484375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 29.114285714285714,
+      "energy_wh": 0.09902901279547857,
+      "temperature_c": 51.871428571428574
     },
     {
       "epoch": 124,
@@ -1867,11 +1873,11 @@
       "time_seconds": 1510.3578095436096,
       "timestamp": "2026-04-24T14:16:41.495087",
       "ram_mb": 520.2421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.942028985507246,
+      "energy_wh": 0.09763907757358276,
+      "temperature_c": 52.028985507246375
     },
     {
       "epoch": 125,
@@ -1882,11 +1888,11 @@
       "time_seconds": 1522.4548377990723,
       "timestamp": "2026-04-24T14:16:53.592115",
       "ram_mb": 520.2421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.852941176470587,
+      "energy_wh": 0.0969541235180462,
+      "temperature_c": 52.11764705882353
     },
     {
       "epoch": 126,
@@ -1897,11 +1903,11 @@
       "time_seconds": 1534.6776399612427,
       "timestamp": "2026-04-24T14:17:05.814917",
       "ram_mb": 520.2421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.814285714285713,
+      "energy_wh": 0.0978309204805465,
+      "temperature_c": 52.32857142857143
     },
     {
       "epoch": 127,
@@ -1912,11 +1918,11 @@
       "time_seconds": 1546.862333536148,
       "timestamp": "2026-04-24T14:17:17.999611",
       "ram_mb": 520.2421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.0,
+      "gpu_reserved_mb": 5238.0,
+      "power_watts": 28.797101449275363,
+      "energy_wh": 0.09746773805691232,
+      "temperature_c": 52.44927536231884
     },
     {
       "epoch": 128,
@@ -1927,11 +1933,11 @@
       "time_seconds": 1559.067770242691,
       "timestamp": "2026-04-24T14:17:30.205047",
       "ram_mb": 520.2421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1163.4492753623188,
+      "gpu_reserved_mb": 5238.31884057971,
+      "power_watts": 27.492753623188406,
+      "energy_wh": 0.093211406732335,
+      "temperature_c": 52.405797101449274
     },
     {
       "epoch": 129,
@@ -1942,11 +1948,11 @@
       "time_seconds": 1571.1819067001343,
       "timestamp": "2026-04-24T14:17:42.319184",
       "ram_mb": 520.2421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1167.7101449275362,
+      "gpu_reserved_mb": 5242.710144927536,
+      "power_watts": 28.594202898550726,
+      "energy_wh": 0.09622057661246179,
+      "temperature_c": 50.55072463768116
     },
     {
       "epoch": 130,
@@ -1957,11 +1963,11 @@
       "time_seconds": 1583.437016248703,
       "timestamp": "2026-04-24T14:17:54.574293",
       "ram_mb": 520.2421875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.318840579710145,
+      "energy_wh": 0.09640291488688925,
+      "temperature_c": 48.130434782608695
     },
     {
       "epoch": 131,
@@ -1972,11 +1978,11 @@
       "time_seconds": 1595.6732449531555,
       "timestamp": "2026-04-24T14:18:06.810522",
       "ram_mb": 520.24609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.52857142857143,
+      "energy_wh": 0.09696725683647489,
+      "temperature_c": 48.44285714285714
     },
     {
       "epoch": 132,
@@ -1987,11 +1993,11 @@
       "time_seconds": 1607.919514656067,
       "timestamp": "2026-04-24T14:18:19.056792",
       "ram_mb": 520.24609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.6231884057971,
+      "energy_wh": 0.09736869027073257,
+      "temperature_c": 48.91304347826087
     },
     {
       "epoch": 133,
@@ -2002,11 +2008,11 @@
       "time_seconds": 1620.1790277957916,
       "timestamp": "2026-04-24T14:18:31.316305",
       "ram_mb": 520.24609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.65714285714286,
+      "energy_wh": 0.0975896165011421,
+      "temperature_c": 49.27142857142857
     },
     {
       "epoch": 134,
@@ -2017,11 +2023,11 @@
       "time_seconds": 1632.4156289100647,
       "timestamp": "2026-04-24T14:18:43.552906",
       "ram_mb": 520.24609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.579710144927535,
+      "energy_wh": 0.0971440313902838,
+      "temperature_c": 49.68115942028985
     },
     {
       "epoch": 135,
@@ -2032,11 +2038,11 @@
       "time_seconds": 1644.767016172409,
       "timestamp": "2026-04-24T14:18:55.904293",
       "ram_mb": 520.24609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.485714285714284,
+      "energy_wh": 0.0977328023853756,
+      "temperature_c": 49.98571428571429
     },
     {
       "epoch": 136,
@@ -2047,11 +2053,11 @@
       "time_seconds": 1657.1131522655487,
       "timestamp": "2026-04-24T14:19:08.250430",
       "ram_mb": 520.24609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.357142857142858,
+      "energy_wh": 0.09725031803524684,
+      "temperature_c": 50.25714285714286
     },
     {
       "epoch": 137,
@@ -2062,11 +2068,11 @@
       "time_seconds": 1669.4166314601898,
       "timestamp": "2026-04-24T14:19:20.553909",
       "ram_mb": 520.24609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.757142857142856,
+      "energy_wh": 0.0982813635667165,
+      "temperature_c": 50.5
     },
     {
       "epoch": 138,
@@ -2077,11 +2083,11 @@
       "time_seconds": 1681.5109252929688,
       "timestamp": "2026-04-24T14:19:32.648202",
       "ram_mb": 520.24609375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.768115942028984,
+      "energy_wh": 0.09664723533843066,
+      "temperature_c": 50.91304347826087
     },
     {
       "epoch": 139,
@@ -2092,11 +2098,11 @@
       "time_seconds": 1693.7067096233368,
       "timestamp": "2026-04-24T14:19:44.843987",
       "ram_mb": 520.2578125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.782608695652176,
+      "energy_wh": 0.09750735781043049,
+      "temperature_c": 51.10144927536232
     },
     {
       "epoch": 140,
@@ -2107,11 +2113,11 @@
       "time_seconds": 1705.9130268096924,
       "timestamp": "2026-04-24T14:19:57.050304",
       "ram_mb": 520.2578125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.840579710144926,
+      "energy_wh": 0.097788128827889,
+      "temperature_c": 51.231884057971016
     },
     {
       "epoch": 141,
@@ -2122,11 +2128,11 @@
       "time_seconds": 1718.1439728736877,
       "timestamp": "2026-04-24T14:20:09.281250",
       "ram_mb": 520.26171875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.62857142857143,
+      "energy_wh": 0.09726514250891549,
+      "temperature_c": 51.6
     },
     {
       "epoch": 142,
@@ -2137,11 +2143,11 @@
       "time_seconds": 1730.3226835727692,
       "timestamp": "2026-04-24T14:20:21.459961",
       "ram_mb": 520.26171875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.884057971014492,
+      "energy_wh": 0.09771405162346727,
+      "temperature_c": 51.73913043478261
     },
     {
       "epoch": 143,
@@ -2152,11 +2158,11 @@
       "time_seconds": 1742.489931344986,
       "timestamp": "2026-04-24T14:20:33.627208",
       "ram_mb": 520.26171875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.72463768115942,
+      "energy_wh": 0.09708327328717267,
+      "temperature_c": 51.94202898550725
     },
     {
       "epoch": 144,
@@ -2167,11 +2173,11 @@
       "time_seconds": 1754.6598546504974,
       "timestamp": "2026-04-24T14:20:45.797132",
       "ram_mb": 520.26171875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.797101449275363,
+      "energy_wh": 0.09734958779408735,
+      "temperature_c": 52.05797101449275
     },
     {
       "epoch": 145,
@@ -2182,11 +2188,11 @@
       "time_seconds": 1766.851743221283,
       "timestamp": "2026-04-24T14:20:57.989020",
       "ram_mb": 520.58203125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.782608695652176,
+      "energy_wh": 0.09747621055386493,
+      "temperature_c": 52.20289855072464
     },
     {
       "epoch": 146,
@@ -2197,11 +2203,11 @@
       "time_seconds": 1779.1423013210297,
       "timestamp": "2026-04-24T14:21:10.279578",
       "ram_mb": 520.61328125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 29.0,
+      "energy_wh": 0.0990072735812929,
+      "temperature_c": 52.5
     },
     {
       "epoch": 147,
@@ -2212,11 +2218,11 @@
       "time_seconds": 1791.8048915863037,
       "timestamp": "2026-04-24T14:21:22.942169",
       "ram_mb": 520.61328125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.971830985915492,
+      "energy_wh": 0.10190511805817182,
+      "temperature_c": 52.04225352112676
     },
     {
       "epoch": 148,
@@ -2227,11 +2233,11 @@
       "time_seconds": 1804.0465245246887,
       "timestamp": "2026-04-24T14:21:35.183802",
       "ram_mb": 520.61328125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.8,
+      "energy_wh": 0.09793306350708007,
+      "temperature_c": 48.957142857142856
     },
     {
       "epoch": 149,
@@ -2242,11 +2248,11 @@
       "time_seconds": 1816.4368982315063,
       "timestamp": "2026-04-24T14:21:47.574175",
       "ram_mb": 520.8671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.542857142857144,
+      "energy_wh": 0.09823796296119691,
+      "temperature_c": 48.24285714285714
     },
     {
       "epoch": 150,
@@ -2257,11 +2263,11 @@
       "time_seconds": 1828.7970762252808,
       "timestamp": "2026-04-24T14:21:59.934353",
       "ram_mb": 520.8671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.742857142857144,
+      "energy_wh": 0.09868523064870682,
+      "temperature_c": 48.857142857142854
     },
     {
       "epoch": 151,
@@ -2272,11 +2278,11 @@
       "time_seconds": 1841.0960161685944,
       "timestamp": "2026-04-24T14:22:12.233293",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 29.071428571428573,
+      "energy_wh": 0.09931882057398085,
+      "temperature_c": 49.22857142857143
     },
     {
       "epoch": 152,
@@ -2287,11 +2293,11 @@
       "time_seconds": 1853.3357994556427,
       "timestamp": "2026-04-24T14:22:24.473076",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 29.314285714285713,
+      "energy_wh": 0.09966680676596505,
+      "temperature_c": 49.77142857142857
     },
     {
       "epoch": 153,
@@ -2302,11 +2308,11 @@
       "time_seconds": 1865.5831227302551,
       "timestamp": "2026-04-24T14:22:36.720400",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 29.144927536231883,
+      "energy_wh": 0.09915204148649592,
+      "temperature_c": 50.04347826086956
     },
     {
       "epoch": 154,
@@ -2317,11 +2323,11 @@
       "time_seconds": 1877.8547859191895,
       "timestamp": "2026-04-24T14:22:48.992063",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.914285714285715,
+      "energy_wh": 0.09856288212064714,
+      "temperature_c": 50.371428571428574
     },
     {
       "epoch": 155,
@@ -2332,11 +2338,11 @@
       "time_seconds": 1890.2147555351257,
       "timestamp": "2026-04-24T14:23:01.352033",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.87142857142857,
+      "energy_wh": 0.09912499441986991,
+      "temperature_c": 50.7
     },
     {
       "epoch": 156,
@@ -2347,11 +2353,11 @@
       "time_seconds": 1902.5539772510529,
       "timestamp": "2026-04-24T14:23:13.691254",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 29.085714285714285,
+      "energy_wh": 0.09969307703820486,
+      "temperature_c": 50.91428571428571
     },
     {
       "epoch": 157,
@@ -2362,11 +2368,11 @@
       "time_seconds": 1914.861165046692,
       "timestamp": "2026-04-24T14:23:25.998442",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.957142857142856,
+      "energy_wh": 0.0989947208800013,
+      "temperature_c": 51.08571428571429
     },
     {
       "epoch": 158,
@@ -2377,11 +2383,11 @@
       "time_seconds": 1927.0475702285767,
       "timestamp": "2026-04-24T14:23:38.184847",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.840579710144926,
+      "energy_wh": 0.09762860834118632,
+      "temperature_c": 51.2463768115942
     },
     {
       "epoch": 159,
@@ -2392,11 +2398,11 @@
       "time_seconds": 1939.279895067215,
       "timestamp": "2026-04-24T14:23:50.417172",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.82608695652174,
+      "energy_wh": 0.09794723874416904,
+      "temperature_c": 51.56521739130435
     },
     {
       "epoch": 160,
@@ -2407,11 +2413,11 @@
       "time_seconds": 1951.6308150291443,
       "timestamp": "2026-04-24T14:24:02.768092",
       "ram_mb": 520.875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 29.014285714285716,
+      "energy_wh": 0.09954253350269228,
+      "temperature_c": 51.871428571428574
     },
     {
       "epoch": 161,
@@ -2422,11 +2428,11 @@
       "time_seconds": 1963.9089102745056,
       "timestamp": "2026-04-24T14:24:15.046187",
       "ram_mb": 520.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.885714285714286,
+      "energy_wh": 0.09851709756397066,
+      "temperature_c": 51.98571428571429
     },
     {
       "epoch": 162,
@@ -2437,11 +2443,11 @@
       "time_seconds": 1976.1470203399658,
       "timestamp": "2026-04-24T14:24:27.284297",
       "ram_mb": 520.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.884057971014492,
+      "energy_wh": 0.09819063349622459,
+      "temperature_c": 52.17391304347826
     },
     {
       "epoch": 163,
@@ -2452,11 +2458,11 @@
       "time_seconds": 1988.278300523758,
       "timestamp": "2026-04-24T14:24:39.415578",
       "ram_mb": 520.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.869565217391305,
+      "energy_wh": 0.09728466234345368,
+      "temperature_c": 52.3768115942029
     },
     {
       "epoch": 164,
@@ -2467,11 +2473,11 @@
       "time_seconds": 2000.487361907959,
       "timestamp": "2026-04-24T14:24:51.624639",
       "ram_mb": 520.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.420289855072465,
+      "energy_wh": 0.09638473983260169,
+      "temperature_c": 52.10144927536232
     },
     {
       "epoch": 165,
@@ -2482,11 +2488,11 @@
       "time_seconds": 2012.7318179607391,
       "timestamp": "2026-04-24T14:25:03.869095",
       "ram_mb": 520.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.242857142857144,
+      "energy_wh": 0.09606067308073953,
+      "temperature_c": 49.02857142857143
     },
     {
       "epoch": 166,
@@ -2497,11 +2503,11 @@
       "time_seconds": 2024.929927110672,
       "timestamp": "2026-04-24T14:25:16.067204",
       "ram_mb": 520.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.391304347826086,
+      "energy_wh": 0.09620006370659612,
+      "temperature_c": 48.0
     },
     {
       "epoch": 167,
@@ -2512,11 +2518,11 @@
       "time_seconds": 2037.1880395412445,
       "timestamp": "2026-04-24T14:25:28.325317",
       "ram_mb": 520.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.67142857142857,
+      "energy_wh": 0.09762710971491677,
+      "temperature_c": 48.6
     },
     {
       "epoch": 168,
@@ -2527,11 +2533,11 @@
       "time_seconds": 2049.2749605178833,
       "timestamp": "2026-04-24T14:25:40.412238",
       "ram_mb": 520.87890625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.75,
+      "energy_wh": 0.09652749391065704,
+      "temperature_c": 49.029411764705884
     },
     {
       "epoch": 169,
@@ -2542,11 +2548,11 @@
       "time_seconds": 2061.4560556411743,
       "timestamp": "2026-04-24T14:25:52.593333",
       "ram_mb": 520.8828125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1182.0,
+      "gpu_reserved_mb": 5257.0,
+      "power_watts": 28.92753623188406,
+      "energy_wh": 0.09788029736750752,
+      "temperature_c": 49.594202898550726
     },
     {
       "epoch": 170,
@@ -2557,11 +2563,11 @@
       "time_seconds": 2073.734746694565,
       "timestamp": "2026-04-24T14:26:04.872024",
       "ram_mb": 520.8828125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1181.7428571428572,
+      "gpu_reserved_mb": 5256.914285714286,
+      "power_watts": 24.47142857142857,
+      "energy_wh": 0.08346586418435688,
+      "temperature_c": 49.24285714285714
     },
     {
       "epoch": 171,
@@ -2572,11 +2578,11 @@
       "time_seconds": 2085.977902173996,
       "timestamp": "2026-04-24T14:26:17.115179",
       "ram_mb": 520.88671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1179.0,
+      "gpu_reserved_mb": 5256.0,
+      "power_watts": 19.642857142857142,
+      "energy_wh": 0.06680293168340411,
+      "temperature_c": 48.4
     },
     {
       "epoch": 172,
@@ -2587,11 +2593,11 @@
       "time_seconds": 2098.2180745601654,
       "timestamp": "2026-04-24T14:26:29.355352",
       "ram_mb": 520.88671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1179.0,
+      "gpu_reserved_mb": 5256.0,
+      "power_watts": 19.3768115942029,
+      "energy_wh": 0.06588208727982502,
+      "temperature_c": 48.20289855072464
     },
     {
       "epoch": 173,
@@ -2602,11 +2608,11 @@
       "time_seconds": 2110.3647327423096,
       "timestamp": "2026-04-24T14:26:41.502010",
       "ram_mb": 520.88671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1179.0,
+      "gpu_reserved_mb": 5256.0,
+      "power_watts": 21.420289855072465,
+      "energy_wh": 0.07227359417555988,
+      "temperature_c": 48.289855072463766
     },
     {
       "epoch": 174,
@@ -2617,11 +2623,11 @@
       "time_seconds": 2122.5478999614716,
       "timestamp": "2026-04-24T14:26:53.685177",
       "ram_mb": 520.88671875,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1176.9710144927535,
+      "gpu_reserved_mb": 5253.971014492754,
+      "power_watts": 12.130434782608695,
+      "energy_wh": 0.04105197649935017,
+      "temperature_c": 47.3768115942029
     },
     {
       "epoch": 175,
@@ -2632,11 +2638,11 @@
       "time_seconds": 2134.824759721756,
       "timestamp": "2026-04-24T14:27:05.962037",
       "ram_mb": 521.015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 5.3428571428571425,
+      "energy_wh": 0.01822041885058085,
+      "temperature_c": 46.142857142857146
     },
     {
       "epoch": 176,
@@ -2647,11 +2653,11 @@
       "time_seconds": 2147.1627266407013,
       "timestamp": "2026-04-24T14:27:18.300004",
       "ram_mb": 521.015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 5.042857142857143,
+      "energy_wh": 0.017282945723760695,
+      "temperature_c": 45.385714285714286
     },
     {
       "epoch": 177,
@@ -2662,11 +2668,11 @@
       "time_seconds": 2159.459709882736,
       "timestamp": "2026-04-24T14:27:30.596987",
       "ram_mb": 521.015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 4.681159420289855,
+      "energy_wh": 0.015990038595721727,
+      "temperature_c": 44.971014492753625
     },
     {
       "epoch": 178,
@@ -2677,11 +2683,11 @@
       "time_seconds": 2171.728185415268,
       "timestamp": "2026-04-24T14:27:42.865463",
       "ram_mb": 521.015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 4.514285714285714,
+      "energy_wh": 0.015384278842381067,
+      "temperature_c": 44.41428571428571
     },
     {
       "epoch": 179,
@@ -2692,11 +2698,11 @@
       "time_seconds": 2184.0442497730255,
       "timestamp": "2026-04-24T14:27:55.181527",
       "ram_mb": 521.015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 4.9,
+      "energy_wh": 0.016763532042503356,
+      "temperature_c": 43.97142857142857
     },
     {
       "epoch": 180,
@@ -2707,11 +2713,11 @@
       "time_seconds": 2196.36257314682,
       "timestamp": "2026-04-24T14:28:07.499850",
       "ram_mb": 521.015625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 4.485714285714286,
+      "energy_wh": 0.015349021981632899,
+      "temperature_c": 43.371428571428574
     },
     {
       "epoch": 181,
@@ -2722,11 +2728,11 @@
       "time_seconds": 2208.70499420166,
       "timestamp": "2026-04-24T14:28:19.842271",
       "ram_mb": 521.01953125,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 5.371428571428571,
+      "energy_wh": 0.01841567585960267,
+      "temperature_c": 42.94285714285714
     },
     {
       "epoch": 182,
@@ -2737,11 +2743,11 @@
       "time_seconds": 2221.0140624046326,
       "timestamp": "2026-04-24T14:28:32.151340",
       "ram_mb": 521.0859375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 5.128571428571429,
+      "energy_wh": 0.017535537638361492,
+      "temperature_c": 42.44285714285714
     },
     {
       "epoch": 183,
@@ -2752,11 +2758,11 @@
       "time_seconds": 2233.2622447013855,
       "timestamp": "2026-04-24T14:28:44.399522",
       "ram_mb": 521.0859375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 4.246376811594203,
+      "energy_wh": 0.014447332580308407,
+      "temperature_c": 41.98550724637681
     },
     {
       "epoch": 184,
@@ -2767,11 +2773,11 @@
       "time_seconds": 2245.6230974197388,
       "timestamp": "2026-04-24T14:28:56.760375",
       "ram_mb": 521.0859375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 6.071428571428571,
+      "energy_wh": 0.020846676211508493,
+      "temperature_c": 41.75714285714286
     },
     {
       "epoch": 185,
@@ -2782,11 +2788,11 @@
       "time_seconds": 2257.9198439121246,
       "timestamp": "2026-04-24T14:29:09.057121",
       "ram_mb": 521.0859375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1174.0,
+      "gpu_reserved_mb": 5251.0,
+      "power_watts": 4.957142857142857,
+      "energy_wh": 0.016932424733563076,
+      "temperature_c": 41.31428571428572
     },
     {
       "epoch": 186,
@@ -2797,11 +2803,11 @@
       "time_seconds": 2270.2484905719757,
       "timestamp": "2026-04-24T14:29:21.385768",
       "ram_mb": 521.0859375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1172.7714285714285,
+      "gpu_reserved_mb": 5249.842857142857,
+      "power_watts": 11.157142857142857,
+      "energy_wh": 0.0382090200053321,
+      "temperature_c": 41.72857142857143
     },
     {
       "epoch": 187,
@@ -2812,11 +2818,11 @@
       "time_seconds": 2282.516057729721,
       "timestamp": "2026-04-24T14:29:33.653335",
       "ram_mb": 521.08984375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.728571428571428,
+      "energy_wh": 0.07063587280114492,
+      "temperature_c": 43.114285714285714
     },
     {
       "epoch": 188,
@@ -2827,11 +2833,11 @@
       "time_seconds": 2294.6471111774445,
       "timestamp": "2026-04-24T14:29:45.784388",
       "ram_mb": 521.08984375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.91176470588235,
+      "energy_wh": 0.07046714870368732,
+      "temperature_c": 43.44117647058823
     },
     {
       "epoch": 189,
@@ -2842,11 +2848,11 @@
       "time_seconds": 2306.8648838996887,
       "timestamp": "2026-04-24T14:29:58.002161",
       "ram_mb": 521.34375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.942857142857143,
+      "energy_wh": 0.07107640797940512,
+      "temperature_c": 43.885714285714286
     },
     {
       "epoch": 190,
@@ -2857,11 +2863,11 @@
       "time_seconds": 2319.143714427948,
       "timestamp": "2026-04-24T14:30:10.280991",
       "ram_mb": 521.34375,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.81159420289855,
+      "energy_wh": 0.07098389951119292,
+      "temperature_c": 44.21739130434783
     },
     {
       "epoch": 191,
@@ -2872,11 +2878,11 @@
       "time_seconds": 2331.3479886054993,
       "timestamp": "2026-04-24T14:30:22.485266",
       "ram_mb": 521.34765625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.82857142857143,
+      "energy_wh": 0.07061044345583235,
+      "temperature_c": 44.5
     },
     {
       "epoch": 192,
@@ -2887,11 +2893,11 @@
       "time_seconds": 2343.4351482391357,
       "timestamp": "2026-04-24T14:30:34.572425",
       "ram_mb": 521.34765625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.83823529411765,
+      "energy_wh": 0.0699652990231327,
+      "temperature_c": 44.85294117647059
     },
     {
       "epoch": 193,
@@ -2902,11 +2908,11 @@
       "time_seconds": 2355.6619477272034,
       "timestamp": "2026-04-24T14:30:46.799225",
       "ram_mb": 521.34765625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.7,
+      "energy_wh": 0.07030409705638885,
+      "temperature_c": 44.98571428571429
     },
     {
       "epoch": 194,
@@ -2917,11 +2923,11 @@
       "time_seconds": 2368.0207192897797,
       "timestamp": "2026-04-24T14:30:59.157996",
       "ram_mb": 521.34765625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.742857142857144,
+      "energy_wh": 0.07121006471770151,
+      "temperature_c": 45.114285714285714
     },
     {
       "epoch": 195,
@@ -2932,11 +2938,11 @@
       "time_seconds": 2380.262823820114,
       "timestamp": "2026-04-24T14:31:11.400101",
       "ram_mb": 521.47265625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.782608695652176,
+      "energy_wh": 0.07067301890700337,
+      "temperature_c": 45.26086956521739
     },
     {
       "epoch": 196,
@@ -2947,11 +2953,11 @@
       "time_seconds": 2392.8477759361267,
       "timestamp": "2026-04-24T14:31:23.985053",
       "ram_mb": 521.7265625,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.680555555555557,
+      "energy_wh": 0.07229550038866792,
+      "temperature_c": 45.47222222222222
     },
     {
       "epoch": 197,
@@ -2962,11 +2968,11 @@
       "time_seconds": 2404.952835083008,
       "timestamp": "2026-04-24T14:31:36.090112",
       "ram_mb": 521.75,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.75,
+      "energy_wh": 0.0697722159160508,
+      "temperature_c": 45.69117647058823
     },
     {
       "epoch": 198,
@@ -2977,11 +2983,11 @@
       "time_seconds": 2417.1937181949615,
       "timestamp": "2026-04-24T14:31:48.330995",
       "ram_mb": 521.75,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.785714285714285,
+      "energy_wh": 0.07067652749163764,
+      "temperature_c": 45.92857142857143
     },
     {
       "epoch": 199,
@@ -2992,11 +2998,11 @@
       "time_seconds": 2429.5028779506683,
       "timestamp": "2026-04-24T14:32:00.640155",
       "ram_mb": 521.75,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.0,
+      "gpu_reserved_mb": 5248.0,
+      "power_watts": 20.757142857142856,
+      "energy_wh": 0.07097305208349984,
+      "temperature_c": 46.042857142857144
     },
     {
       "epoch": 200,
@@ -3007,25 +3013,15 @@
       "time_seconds": 2441.8344588279724,
       "timestamp": "2026-04-24T14:32:12.971736",
       "ram_mb": 521.75,
-      "gpu_allocated_mb": 0,
-      "gpu_reserved_mb": 0,
-      "power_watts": 0,
-      "energy_wh": 0.0,
-      "temperature_c": 0
+      "gpu_allocated_mb": 1171.072463768116,
+      "gpu_reserved_mb": 5248.086956521739,
+      "power_watts": 20.681159420289855,
+      "energy_wh": 0.07084205278547874,
+      "temperature_c": 46.21739130434783
     }
   ],
-  "gpu_benchmark": {
-    "device": "privateuseone:0",
-    "gpu_type": "amd_directml",
-    "num_tests": 100,
-    "num_steps": 30,
-    "average_ms": 51.1448335647583,
-    "p95_ms": 61.000168323516846,
-    "power_w": 24.5,
-    "power_source": "amd_measured_baseline",
-    "energy_per_inference_uJ": 1253048.4223365786,
-    "daily_energy_wh": 30.073162136077887,
-    "inferences_per_day": 86400,
-    "timestamp": "2026-04-19T13:01:51.361457"
-  }
+  "inference_timing": {},
+  "use_cases": {},
+  "framework": "snnTorch",
+  "neuromorphic": true
 }

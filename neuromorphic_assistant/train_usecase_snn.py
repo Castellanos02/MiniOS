@@ -21,16 +21,11 @@ import json
 import time
 from datetime import datetime
 
-from use_case_data import (
-    generate_use_case_training_data,
-    get_splits,
-    ACTIVITY_LABELS,
-    SUGGESTION_LABELS,
-    NUM_FEATURES,
-    NUM_CLASSES,
-    UserProfile,
-    USE_CASES,
-)
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+DATASET_PATH = 'general_assistant_dataset_update.csv'
 
 try:
     import psutil
@@ -75,7 +70,7 @@ def get_metrics_path(gpu_type: str) -> str:
 # ============================================================
 
 class NeuromorphicActivitySNN(nn.Module):
-    def __init__(self, input_size=NUM_FEATURES, hidden_size=64, output_size=NUM_CLASSES, beta=0.9):
+    def __init__(self, input_size, hidden_size=64, output_size=10, beta=0.9, dropout=0.25):
         super().__init__()
 
         self.input_size  = input_size
@@ -84,8 +79,9 @@ class NeuromorphicActivitySNN(nn.Module):
 
         spike_grad = surrogate.fast_sigmoid(slope=25)
 
-        self.fc1  = nn.Linear(input_size, hidden_size)
-        self.lif1 = snn.Leaky(beta=beta, spike_grad=spike_grad)
+        self.fc1     = nn.Linear(input_size, hidden_size)
+        self.lif1    = snn.Leaky(beta=beta, spike_grad=spike_grad)
+        self.drop    = nn.Dropout(p=dropout)
 
         self.fc2  = nn.Linear(hidden_size, output_size)
         self.lif2 = snn.Leaky(beta=beta, spike_grad=spike_grad)
@@ -98,6 +94,7 @@ class NeuromorphicActivitySNN(nn.Module):
         for _ in range(num_steps):
             cur1 = self.fc1(x)
             spk1, mem1 = self.lif1(cur1, mem1)
+            spk1 = self.drop(spk1)
             cur2 = self.fc2(spk1)
             spk2, mem2 = self.lif2(cur2, mem2)
             spk_out_rec.append(spk2)
@@ -167,12 +164,14 @@ class GPUMonitor:
         self.start_time = time.time()
         self.history    = []
 
-    def record_metrics(self, epoch, accuracy, loss):
+    def record_metrics(self, epoch, accuracy, loss, val_accuracy=None, val_loss=None):
         current_time = time.time() - self.start_time
         metrics = {
             'epoch':            epoch,
-            'accuracy':         accuracy,
-            'loss':             loss,
+            'train_accuracy':   accuracy,
+            'train_loss':       loss,
+            'val_accuracy':     val_accuracy,
+            'val_loss':         val_loss,
             'time_seconds':     current_time,
             'timestamp':        datetime.now().isoformat(),
             'ram_mb':           0,
@@ -209,7 +208,9 @@ class GPUMonitor:
         if not self.history:
             return {}
         return {
-            'final_accuracy':       self.history[-1]['accuracy'],
+            'final_accuracy':       self.history[-1]['train_accuracy'],
+            'final_val_accuracy':   self.history[-1].get('val_accuracy', 0),
+            'final_val_loss':       self.history[-1].get('val_loss', 0),
             'max_ram_mb':           max(h['ram_mb'] for h in self.history),
             'max_gpu_allocated_mb': max(h.get('gpu_allocated_mb', 0) for h in self.history),
             'average_power_watts':  sum(h['power_watts'] for h in self.history) / len(self.history),
@@ -271,12 +272,8 @@ def update_metrics_file(key, data, metrics_path: str):
     print(f"✓ Saved '{key}' to {metrics_path}")
 
 
-# ============================================================
-# --train
-# ============================================================
 
-def run_train(num_samples=1000, num_epochs=200, hidden_size=64,
-              batch_size=32, lr=0.001, split_mode='70-20-10'):
+def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
 
     print("\n" + "="*70)
     print("NEUROMORPHIC SNN — DRIVING ASSISTANT TRAINING")
@@ -284,12 +281,35 @@ def run_train(num_samples=1000, num_epochs=200, hidden_size=64,
 
     monitor = GPUMonitor()
 
-    print(f"\nGenerating {num_samples} driving scenarios...")
-    X_all, y_all, scenarios = generate_use_case_training_data(num_samples)
+    print(f"\nLoading dataset from {DATASET_PATH}...")
+    df = pd.read_csv(DATASET_PATH)
+    print(f"  Loaded {len(df)} rows  |  {df['suggestion_name'].nunique()} classes")
 
-    # ---- 70-20-10 (or 60-20-20) split ----
-    X_tr, X_va, X_te, y_tr, y_va, y_te = get_splits(X_all, y_all, mode=split_mode)
-    print(f"  Split ({split_mode}):  train={len(X_tr)}  val={len(X_va)}  test={len(X_te)}")
+    # Encode categorical columns
+    cat_cols = ['time_of_day', 'event_category', 'scheduled_event',
+                'location', 'weather', 'last_media']
+    for col in cat_cols:
+        df[col] = LabelEncoder().fit_transform(df[col].astype(str))
+
+    # Features: everything except label columns
+    drop_cols = ['suggestion_name', 'suggestion_label']
+    feature_cols = [c for c in df.columns if c not in drop_cols]
+    X_all = df[feature_cols].values.astype(np.float32)
+    y_all = df['suggestion_label'].values.astype(np.int64)
+
+    suggestion_labels = sorted(df['suggestion_name'].unique())
+    num_classes       = len(suggestion_labels)
+
+    # 70-20-10 split
+    X_tr, X_te, y_tr, y_te = train_test_split(X_all, y_all, test_size=0.10, random_state=42, stratify=y_all)
+    X_tr, X_va, y_tr, y_va = train_test_split(X_tr,  y_tr,  test_size=0.222, random_state=42, stratify=y_tr)
+    print(f"  Split (70-20-10):  train={len(X_tr)}  val={len(X_va)}  test={len(X_te)}")
+
+    # Normalise features — fit on train only to avoid data leakage
+    scaler = StandardScaler()
+    X_tr = scaler.fit_transform(X_tr)
+    X_va = scaler.transform(X_va)
+    X_te = scaler.transform(X_te)
 
     X_train = torch.tensor(X_tr, dtype=torch.float32)
     y_train = torch.tensor(y_tr, dtype=torch.long)
@@ -300,29 +320,19 @@ def run_train(num_samples=1000, num_epochs=200, hidden_size=64,
 
     print(f"  {len(X_train)} train samples  |  "
           f"{X_train.shape[1]} features  |  "
-          f"{len(SUGGESTION_LABELS)} suggestion classes")
+          f"{num_classes} suggestion classes")
 
-    class_counts  = torch.bincount(y_train, minlength=len(SUGGESTION_LABELS)).float()
+    class_counts  = torch.bincount(y_train, minlength=num_classes).float()
     class_weights = 1.0 / (class_counts + 1e-6)
-    class_weights = (class_weights / class_weights.sum() * len(SUGGESTION_LABELS)).to(monitor.device)
+    class_weights = (class_weights / class_weights.sum() * num_classes).to(monitor.device)
 
     train_dataset = TensorDataset(X_train, y_train)
     loader        = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
     val_dataset   = TensorDataset(X_val, y_val)
     val_loader    = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    print("\nSample driving scenarios:")
-    for i in range(3):
-        s   = scenarios[i]
-        day = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][s['day_of_week']]
-        print(f"  {day} {s['hour']:02d}:{s['minute']:02d} | "
-              f"dest={s['destination_type']} | "
-              f"gas={s['gas_level_pct']:.0f}% | "
-              f"fatigue={s['driver_fatigue_level']:.1f} "
-              f"-> {s['suggestion']}")
-
     input_size  = X_train.shape[1]
-    output_size = len(SUGGESTION_LABELS)
+    output_size = num_classes
 
     model = NeuromorphicActivitySNN(
         input_size=input_size,
@@ -335,7 +345,7 @@ def run_train(num_samples=1000, num_epochs=200, hidden_size=64,
         nn.init.xavier_uniform_(model.fc1.weight)
         nn.init.xavier_uniform_(model.fc2.weight)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=num_epochs, eta_min=1e-4
     )
@@ -344,8 +354,10 @@ def run_train(num_samples=1000, num_epochs=200, hidden_size=64,
     print(f"\nTraining {num_epochs} epochs...")
     print("="*70)
 
-    best_accuracy    = 0
-    best_model_state = None
+    best_accuracy      = 0
+    best_model_state   = None
+    early_stop_patience = 30
+    epochs_no_improve  = 0
 
     for epoch in range(num_epochs):
         model.train()
@@ -376,20 +388,28 @@ def run_train(num_samples=1000, num_epochs=200, hidden_size=64,
         # --- validation pass ---
         model.eval()
         val_correct = val_total = 0
+        val_loss_sum = 0.0
         with torch.no_grad():
             for Xv, yv in val_loader:
                 Xv, yv = Xv.to(monitor.device), yv.to(monitor.device)
                 spk_v, _ = model(Xv, num_steps=30)
-                _, pred_v = spk_v.sum(0).max(1)
-                val_correct += (pred_v == yv).sum().item()
-                val_total   += yv.size(0)
+                spike_counts_v = spk_v.sum(0)
+                v_loss = F.cross_entropy(spike_counts_v, yv, weight=class_weights)
+                _, pred_v = spike_counts_v.max(1)
+                val_correct  += (pred_v == yv).sum().item()
+                val_total    += yv.size(0)
+                val_loss_sum += v_loss.item() * yv.size(0)
         val_accuracy = (val_correct / val_total) * 100
+        val_avg_loss = val_loss_sum / val_total
 
         if val_accuracy > best_accuracy:
             best_accuracy    = val_accuracy
             best_model_state = {k: v.clone() for k, v in model.state_dict().items()}
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
 
-        metrics = monitor.record_metrics(epoch + 1, accuracy, avg_loss)
+        metrics = monitor.record_metrics(epoch + 1, accuracy, avg_loss, val_accuracy, val_avg_loss)
 
         if True:
             print(f"Epoch {epoch+1:3d}/{num_epochs}  "
@@ -417,30 +437,25 @@ def run_train(num_samples=1000, num_epochs=200, hidden_size=64,
     print(f"  Test-set accuracy: {test_accuracy:.1f}%")
 
     # Save model
-    default_profile = UserProfile()
     torch.save({
         'model_state_dict':    model.state_dict(),
         'input_size':          model.input_size,
         'hidden_size':         model.hidden_size,
         'output_size':         model.output_size,
-        'suggestion_labels':   SUGGESTION_LABELS,
-        'activity_labels':     ACTIVITY_LABELS,
-        'use_cases':           USE_CASES,
-        'default_preferences': default_profile.preferences,
+        'suggestion_labels':   suggestion_labels,
+        'dataset_path':        DATASET_PATH,
         'best_val_accuracy':   best_accuracy,
         'test_accuracy':       test_accuracy,
-        'split_mode':          split_mode,
-        'num_samples':         num_samples,
-        'proactive':           True,
-        'driving_assistant':   True,
+        'split_mode':          '70-20-10',
+        'num_samples':         len(df),
     }, MODEL_PATH)
     print(f"  Model saved to {MODEL_PATH}")
 
     # Save training metrics to GPU-specific file
     metrics_path = get_metrics_path(monitor.gpu_type)
     summary = monitor.get_summary()
-    summary['test_accuracy']  = test_accuracy
-    summary['split_mode']     = split_mode
+    summary['test_accuracy'] = test_accuracy
+    summary['dataset_path']  = DATASET_PATH
     update_metrics_file('summary', summary, metrics_path)
     update_metrics_file('history', monitor.history, metrics_path)
 
