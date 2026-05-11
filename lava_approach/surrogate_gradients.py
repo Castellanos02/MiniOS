@@ -6,8 +6,8 @@ from lava.proc.monitor.process import Monitor
 from lava.magma.core.run_conditions import RunSteps
 from lava.magma.core.run_configs import Loihi1SimCfg
 
-from model_parameters import Model_Params
-from learning import feedback_to_reward, policy_loss_and_grad
+from lava_approach.model_parameters import Model_Params
+from lava_approach.learning import feedback_to_reward, policy_loss_and_grad
 
 max_firing_rate = 500.0
 time_step = 1.0

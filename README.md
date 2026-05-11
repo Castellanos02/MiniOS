@@ -16,15 +16,6 @@ A custom bootable operating system with integrated Spiking Neural Network (SNN) 
 - **Bootable OS**: Runs in QEMU/VirtualBox with GRUB multiboot
 - **Complete Metrics**: Collects 8 training metrics including power, energy, and inference time
 
-### Performance
-
-- **Training Accuracy**: 89-91%
-- **Training Time**: 9-12 seconds (GPU)
-- **Inference Latency**: 24ms average
-- **Energy Consumption**: 0.027 Wh
-- **Activities**: 20 context-aware suggestions
-
----
 
 ## Quick Start
 
@@ -52,62 +43,54 @@ pip install nvidia-ml-py3
 # For AMD GPU:
 pip install torch-directml
 
-# 3. Install build tools (Windows)
-choco install make nasm qemu
-# Or use WSL for easier builds
+# 3. Install Linux environment Ubuntu (windows)
+wsl --install
+
+# 4. Install build tools (Windows)
+sudo apt update
+sudo apt uprgade -y
+sudo apt install -y build-essential nasm make qemu-system-x86 grub-pc-bin grub-common xorriso
 ```
 
 ---
 
 ## Training Workflow
 
-### Option A: NVIDIA GPU (Simple - 1 Step)
-
-```powershell
-cd minios\neuromorphic_assistant
-
-# Train (automatically collects all 8 metrics)
-python train_usecase_snn.py
-
-# Output: usecase_training_metrics.json
-# - 6/8 metrics real (power/energy estimated)
-# - Training complete in ~10 seconds
-```
-
-### Option B: AMD GPU (2 Steps - Real Power Data)
-
-```powershell
+```anaconda prompt
 cd minios\neuromorphic_assistant
 
 # Step 1: Start HWiNFO64 logging FIRST
 # - Open HWiNFO64
 # - Configure → Polling Period → 200ms (recommended)
-# - Sensors → Logging → training_amd_snntorch.csv
+# - Sensors → Logging → {GPU Type}_recorded_metrics.csv
 # - Enable: GPU Power, GPU Temp, GPU Memory
 
 # Step 2: Train
+# Train (automatically collects all 8 metrics)
 python train_usecase_snn.py
+
+# Output: usecase_training_metrics_{GPU Type}.json
 
 # Step 3: Stop HWiNFO64 logging
 
 # Step 4: Combine metrics
 python combine_training_metrics.py `
-    --training usecase_training_metrics.json `
-    --hwinfo training_amd_snntorch.csv `
+    --training usecase_training_metrics_{GPU Type}.json `
+    --hwinfo {GPU Type}_recorded_metrics.csv `
     --output complete_amd_metrics.json
 
-# Output: complete_amd_metrics.json
+# Output: complete_{GPU Type}_metrics.json
 # - 8/8 metrics real (all from HWiNFO64)
 # - Per-epoch power/temp data
-```
 
+```
 ---
 
 ## Building the OS
 
 ### Export Model to Kernel
 
-```powershell
+```anaconda prompt
 cd minios\neuromorphic_assistant
 
 # Export trained weights to C header file
@@ -118,7 +101,7 @@ python export_usecase_to_minios.py
 
 ### Build Bootable ISO
 
-```powershell
+```Ubuntu
 cd minios
 
 # Clean previous builds
@@ -132,12 +115,9 @@ make iso-carplay
 
 ### Run in QEMU
 
-```powershell
+```Ubuntu
 # Run the OS
 make run-carplay
-
-# Or manually:
-qemu-system-i386 -cdrom minios_carplay.iso -m 128M
 ```
 
 ---
@@ -179,9 +159,6 @@ The system automatically checks every 30 minutes (at :00 and :30) for idle calen
 | 6 | **Energy** | Calculated | Est. | Real (HWiNFO64) |
 | 7 | **Time** | time.time() | Real | Real |
 | 8 | **Inference** | 100 tests | Real | Real |
-
-**NVIDIA**: 6/8 real, 2/8 estimated (power uses 115W TDP)  
-**AMD**: 8/8 real (with HWiNFO64)
 
 ---
 
@@ -242,44 +219,6 @@ Timesteps:     20 (spike-based temporal processing)
 
 ---
 
-## Troubleshooting
-
-### GPU Not Detected (AMD)
-
-```powershell
-# Install DirectML support
-pip install torch-directml
-
-# Verify
-python -c "import torch_directml; print(torch_directml.is_available())"
-```
-
-### Build Errors
-
-```powershell
-# Use WSL for easier builds
-wsl
-cd /mnt/c/path/to/minios
-sudo apt install build-essential nasm genisoimage qemu-system-x86
-make clean && make iso-carplay
-```
-
-### QEMU Not Found
-
-```powershell
-# Install QEMU
-choco install qemu
-
-# Or download from: https://www.qemu.org/download/
-```
-
-### HWiNFO64 Missing Sensors
-
-1. Make sure GPU sensors are enabled in HWiNFO64
-2. Set polling to 200ms (Configure → Polling Period → 200)
-3. Check for "GPU Power [W]" and "GPU Temperature [°C]"
-
----
 
 ## Technical Details
 

@@ -32,7 +32,7 @@ try:
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
-    print("⚠️  psutil not available - RAM/CPU monitoring disabled")
+    print("psutil not available - RAM/CPU monitoring disabled")
 
 try:
     import pynvml
@@ -124,13 +124,13 @@ class GPUMonitor:
 
     def _detect_gpu(self):
         if torch.cuda.is_available():
-            print(f"✓ CUDA GPU: {torch.cuda.get_device_name(0)}")
+            print(f"CUDA GPU: {torch.cuda.get_device_name(0)}")
             if NVML_AVAILABLE:
                 try:
                     pynvml.nvmlInit()
                     self.nvml   = pynvml
                     self.handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-                    print("✓ NVML monitoring enabled")
+                    print("NVML monitoring enabled")
                     return 'nvidia'
                 except Exception as e:
                     print(f"NVML disabled ({e})")
@@ -140,12 +140,12 @@ class GPUMonitor:
         try:
             import torch_directml
             if torch_directml.is_available():
-                print("✓ AMD GPU via DirectML")
+                print("AMD GPU via DirectML")
                 return 'amd_directml'
         except ImportError:
             pass
 
-        print("⚠️  No GPU found — falling back to CPU")
+        print("No GPU found — falling back to CPU")
         return 'cpu'
 
     def _get_device(self):
@@ -248,7 +248,7 @@ def load_model_from_disk():
     )
     model.load_state_dict(checkpoint['model_state_dict'])
 
-    print(f"✓ Loaded model from {MODEL_PATH}")
+    print(f"Loaded model from {MODEL_PATH}")
     print(f"  Architecture:  {checkpoint['input_size']} → "
           f"{checkpoint['hidden_size']} → {checkpoint['output_size']}")
     print(f"  Best accuracy: {checkpoint.get('best_accuracy', 'N/A')}")
@@ -269,7 +269,7 @@ def update_metrics_file(key, data, metrics_path: str):
     with open(metrics_path, 'w') as f:
         json.dump(metrics, f, indent=2)
 
-    print(f"✓ Saved '{key}' to {metrics_path}")
+    print(f" Saved '{key}' to {metrics_path}")
 
 
 
