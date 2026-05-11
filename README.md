@@ -67,7 +67,7 @@ cd minios\neuromorphic_assistant
 
 # Step 2: Train
 # Train (automatically collects all 8 metrics)
-python train_usecase_snn.py
+python train_usecase_snn.py --train
 
 # Output: usecase_training_metrics_{GPU Type}.json
 
