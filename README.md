@@ -77,7 +77,7 @@ python train_usecase_snn.py --train
 python combine_training_metrics.py `
     --training usecase_training_metrics_{GPU Type}.json `
     --hwinfo {GPU Type}_recorded_metrics.csv `
-    --output complete_amd_metrics.json
+    --output complete_{GPU Type}_metrics.json
 
 # Output: complete_{GPU Type}_metrics.json
 # - 8/8 metrics real (all from HWiNFO64)
