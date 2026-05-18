@@ -14,35 +14,19 @@
 // Priority 1 = SNN Inference Engine
 // Priority 2 = System Metrics / Proactive AI
 // Priority 3 = Idle task (executes hlt)
+//
+// All scheduler types, constants, functions, and globals are declared in
+// kernel/scheduler.h and are part of the public, externally-callable API.
+// See scheduler-API.md for the full reference.
 // =============================================================================
 
-#define TASK_READY      0
-#define TASK_RUNNING    1
-#define TASK_SLEEPING   2
-#define NUM_TASKS       4
-#define TASK_STACK_SZ   8192        // 8 KB per task — SNN LIF loops need depth
-#define PIT_DIVISOR     1193        // 1193182 Hz / 1193 ≈ 1000 Hz (1 ms ticks)
-#define SNN_WAKE_INTERVAL 1800000UL // 30 min * 60 s * 1000 ticks/s
+#include "scheduler.h"
 
-// Task Control Block
-// IMPORTANT: esp MUST remain at offset 0 — scheduler.asm depends on this.
-typedef struct {
-    uint32_t esp;        // offset  0: saved stack pointer
-    uint32_t ebp;        // offset  4: saved base pointer
-    uint32_t state;      // offset  8: TASK_READY / TASK_RUNNING / TASK_SLEEPING
-    uint8_t  priority;   // offset 12: 0 (highest) … 3 (lowest)
-    uint32_t stack_top;  // offset 16: top of task's stack region
-    uint32_t wake_tick;  // offset 20: absolute tick to wake a sleeping task
-} Task;
-
-static Task           g_tasks[NUM_TASKS];
-static uint8_t        g_ready_mask   = 0;   // bit N set → priority-N task is READY
-static uint8_t        g_current_task = 0;   // index of currently running task
-static volatile uint32_t g_tick      = 0;   // incremented on every PIT interrupt
-static uint8_t        g_task_stacks[NUM_TASKS][TASK_STACK_SZ] __attribute__((aligned(16)));
-
-// Defined in kernel/scheduler.asm (BITS 32, linked via iso-carplay Makefile target)
-extern void switch_context(Task *prev, Task *next);
+Task               g_tasks[NUM_TASKS];
+uint8_t            g_ready_mask   = 0;
+uint8_t            g_current_task = 0;
+volatile uint32_t  g_tick         = 0;
+uint8_t            g_task_stacks[NUM_TASKS][TASK_STACK_SZ] __attribute__((aligned(16)));
 
 // =============================================================================
 // SIMPLIFIED ML & MEMORY TRACKING (from kernel_enhanced.c)
@@ -124,6 +108,8 @@ static uint8_t g_event_count = 0;
 // Add scheduled events (pre-populated)
 static void init_calendar(void) {
     g_event_count = 0;
+    
+    // Add some sample scheduled events
     g_events[g_event_count++] = (CalendarEvent){9, 0, 60, "Team Meeting", 0, 1};
     g_events[g_event_count++] = (CalendarEvent){11, 30, 30, "Lunch Break", 0, 5};
     g_events[g_event_count++] = (CalendarEvent){14, 0, 45, "Project Work", 0, 3};
@@ -133,12 +119,13 @@ static void init_calendar(void) {
 // Add AI suggestion to calendar
 static void add_suggestion_to_calendar(uint8_t activity_idx, uint8_t hour, uint8_t minute) {
     if (g_event_count >= MAX_EVENTS) return;
+    
     g_events[g_event_count++] = (CalendarEvent){
         hour,
         minute,
-        15,
+        15,  // Default 15 min duration
         g_activities[activity_idx].desc,
-        1,
+        1,   // Is suggestion
         g_activities[activity_idx].category
     };
 }
@@ -151,6 +138,7 @@ static void add_suggestion_to_calendar(uint8_t activity_idx, uint8_t hour, uint8
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 25
 
+// Extended color palette for CarPlay style
 #define COLOR_BLACK 0x0
 #define COLOR_BLUE 0x1
 #define COLOR_GREEN 0x2
@@ -265,7 +253,7 @@ static void two_digit_str(uint8_t num, char* buf) {
 }
 
 // =============================================================================
-// KEYBOARD AND PORT I/O
+// KEYBOARD INPUT
 // =============================================================================
 
 static inline uint8_t inb(uint16_t port) {
@@ -309,6 +297,7 @@ static char check_key(void) {
 
 // =============================================================================
 // IDT / PIC / PIT INITIALISATION
+// (See scheduler-readME.md "Hardware Initialisation" for the full rationale.)
 // =============================================================================
 
 // 32-bit interrupt gate descriptor (8 bytes)
@@ -328,96 +317,93 @@ typedef struct __attribute__((packed)) {
 static IDTEntry   g_idt[256];
 static IDTPointer g_idtp;
 
-// Defined in scheduler.asm
-extern void isr_pit(void);
-
-static void idt_set_gate(uint8_t vec, uint32_t handler) {
+void idt_set_gate(uint8_t vec, uint32_t handler) {
     g_idt[vec].offset_low  = (uint16_t)(handler & 0xFFFF);
-    g_idt[vec].selector    = 0x08;   // GRUB's flat 32-bit ring-0 code segment
+    g_idt[vec].selector    = 0x08;
     g_idt[vec].zero        = 0;
-    g_idt[vec].type_attr   = 0x8E;   // present, ring-0, interrupt gate (IF cleared on entry)
+    g_idt[vec].type_attr   = 0x8E;
     g_idt[vec].offset_high = (uint16_t)((handler >> 16) & 0xFFFF);
 }
 
-static void idt_install(void) {
-    // Zero all 256 entries (all gates not-present initially)
+void idt_install(void) {
     for (int i = 0; i < 256; i++) {
         g_idt[i].offset_low  = 0;
         g_idt[i].selector    = 0x08;
         g_idt[i].zero        = 0;
-        g_idt[i].type_attr   = 0x0E;  // not-present gate
+        g_idt[i].type_attr   = 0x0E;
         g_idt[i].offset_high = 0;
     }
-
-    // IRQ0 → PIT timer (remapped to vector 0x20 after PIC init below)
-    idt_set_gate(0x20, (uint32_t)isr_pit);
+    idt_set_gate(PIT_VECTOR, (uint32_t)isr_pit);
 
     g_idtp.limit = (uint16_t)(sizeof(g_idt) - 1);
     g_idtp.base  = (uint32_t)g_idt;
     __asm__ volatile("lidt %0" :: "m"(g_idtp));
 }
 
-// Remap 8259A PIC: master IRQ0-7 → vectors 0x20-0x27, slave 0x28-0x2F.
-// This avoids collision with CPU exceptions at vectors 0x00-0x1F.
-// Only IRQ0 (PIT) is unmasked; all others are masked.
-static void pic_remap(void) {
-    outb(0x20, 0x11); io_wait();   // ICW1: init master (edge, cascade, ICW4 needed)
+void pic_remap(void) {
+    outb(0x20, 0x11); io_wait();   // ICW1: init master
     outb(0xA0, 0x11); io_wait();   // ICW1: init slave
     outb(0x21, 0x20); io_wait();   // ICW2: master base vector = 0x20
     outb(0xA1, 0x28); io_wait();   // ICW2: slave base vector  = 0x28
     outb(0x21, 0x04); io_wait();   // ICW3: master has slave on IR2
     outb(0xA1, 0x02); io_wait();   // ICW3: slave cascade identity = 2
     outb(0x21, 0x01); io_wait();   // ICW4: 8086 mode
-    outb(0xA1, 0x01); io_wait();   // ICW4: 8086 mode
-    outb(0x21, 0xFE);              // OCW1: unmask IRQ0 only (bit 0 = 0)
+    outb(0xA1, 0x01); io_wait();
+    outb(0x21, 0xFE);              // OCW1: unmask IRQ0 only
     outb(0xA1, 0xFF);              // OCW1: mask all slave IRQs
 }
 
-// Configure PIT channel 0 for ~1000 Hz (1 ms ticks).
-// Command byte 0x36: channel=0, lo/hi access, mode 3 (square wave), binary.
-static void pit_init(void) {
+void pit_init(void) {
     outb(0x43, 0x36);
     outb(0x40, (uint8_t)(PIT_DIVISOR & 0xFF));
     outb(0x40, (uint8_t)((PIT_DIVISOR >> 8) & 0xFF));
 }
 
 // =============================================================================
-// ML FUNCTIONS (unchanged from original)
+// ML FUNCTIONS (simplified from kernel_enhanced.c)
 // =============================================================================
 
 static void ml_update_context(uint32_t cycles, uint8_t idle) {
     g_ml.cycles += cycles;
-
+    
     uint32_t minutes = (g_ml.cycles / 1000000) % (24 * 60);
     g_ml.current_hour = (minutes / 60) % 24;
     g_ml.current_minute = minutes % 60;
-
+    
+    // Calculate day of week (simple: 0=Mon, cycles from Monday 00:00)
     uint32_t total_minutes = g_ml.cycles / 1000000;
     uint32_t days = total_minutes / (24 * 60);
-    g_ml.day_of_week = days % 7;
-
+    g_ml.day_of_week = days % 7;  // 0=Mon, 6=Sun
+    
     if (g_ml.current_hour >= 6 && g_ml.current_hour < 12) g_ml.time_segment = 0;
     else if (g_ml.current_hour >= 12 && g_ml.current_hour < 17) g_ml.time_segment = 1;
     else if (g_ml.current_hour >= 17 && g_ml.current_hour < 22) g_ml.time_segment = 2;
     else g_ml.time_segment = 3;
-
+    
+    // Better energy model: gradual increase in morning, peak midday, decline evening
     if (g_ml.current_hour >= 6 && g_ml.current_hour < 9) {
+        // Morning: 60-80 (waking up, energy building)
         g_ml.energy_level = 60 + ((g_ml.current_hour - 6) * 7);
     } else if (g_ml.current_hour >= 9 && g_ml.current_hour < 12) {
+        // Late morning: 80-90 (peak morning energy)
         g_ml.energy_level = 80 + ((g_ml.current_hour - 9) * 3);
     } else if (g_ml.current_hour >= 12 && g_ml.current_hour < 14) {
+        // Lunch: 70-80 (slight dip)
         g_ml.energy_level = 75;
     } else if (g_ml.current_hour >= 14 && g_ml.current_hour < 17) {
+        // Afternoon: 65-75
         g_ml.energy_level = 70;
     } else if (g_ml.current_hour >= 17 && g_ml.current_hour < 22) {
+        // Evening: 50-65 (declining)
         g_ml.energy_level = 65 - ((g_ml.current_hour - 17) * 3);
     } else {
+        // Night/early morning: 30-50 (low)
         g_ml.energy_level = 35;
     }
-
+    
     uint32_t total = g_ml.total_accepts + g_ml.total_rejects;
     g_ml.engagement = total > 0 ? (g_ml.total_accepts * 100) / total : 50;
-
+    
     if (idle) g_ml.idle_cycles += cycles;
     mem_track_ctx();
 }
@@ -426,20 +412,20 @@ static uint8_t ml_score_activity(uint8_t idx) {
     if (idx >= NUM_ACTIVITIES) return 0;
     Activity* act = &g_activities[idx];
     uint8_t score = 0;
-
+    
     if (act->time_pref == 3) score += 20;
     else if (act->time_pref == g_ml.time_segment) score += 30;
     else score += 5;
-
+    
     int diff = act->energy_req - g_ml.energy_level;
     if (diff < 0) diff = -diff;
     if (diff < 15) score += 30;
     else if (diff < 30) score += 20;
     else score += 5;
-
+    
     if (idx < 20) score += (g_ml.activity_prefs[idx] * 2);
     if (g_ml.engagement > 50) score += 10;
-
+    
     return score;
 }
 
@@ -459,38 +445,53 @@ static uint8_t ml_suggest_activity(void) {
 // NEUROMORPHIC SNN PROACTIVE SUGGESTIONS
 // =============================================================================
 
+// Get idle time until next calendar event
 static int get_idle_minutes_until_next_event(void) {
     int current_mins = g_ml.current_hour * 60 + g_ml.current_minute;
-    int next_event_mins = 24 * 60;
-
+    int next_event_mins = 24 * 60;  // End of day default
+    
+    // Find next event
     for (uint8_t i = 0; i < g_event_count; i++) {
         int event_mins = g_events[i].hour * 60 + g_events[i].minute;
         if (event_mins > current_mins && event_mins < next_event_mins) {
             next_event_mins = event_mins;
         }
     }
-
+    
     int idle_mins = next_event_mins - current_mins;
-
+    
+    // If no events found (idle_mins >= full day), use time-of-day heuristic
     if (idle_mins >= 24 * 60 || idle_mins <= 0) {
-        if (g_ml.current_hour >= 6 && g_ml.current_hour < 9) return 60;
-        else if (g_ml.current_hour >= 9 && g_ml.current_hour < 12) return 120;
-        else if (g_ml.current_hour >= 12 && g_ml.current_hour < 14) return 60;
-        else if (g_ml.current_hour >= 14 && g_ml.current_hour < 17) return 90;
-        else if (g_ml.current_hour >= 17 && g_ml.current_hour < 20) return 120;
-        else if (g_ml.current_hour >= 20 && g_ml.current_hour < 22) return 90;
-        else return 30;
+        // Estimate based on time of day
+        if (g_ml.current_hour >= 6 && g_ml.current_hour < 9) {
+            return 60;  // Morning: 1 hour blocks
+        } else if (g_ml.current_hour >= 9 && g_ml.current_hour < 12) {
+            return 120; // Mid-morning: 2 hour blocks
+        } else if (g_ml.current_hour >= 12 && g_ml.current_hour < 14) {
+            return 60;  // Lunch: 1 hour
+        } else if (g_ml.current_hour >= 14 && g_ml.current_hour < 17) {
+            return 90;  // Afternoon: 1.5 hours
+        } else if (g_ml.current_hour >= 17 && g_ml.current_hour < 20) {
+            return 120; // Evening: 2 hours
+        } else if (g_ml.current_hour >= 20 && g_ml.current_hour < 22) {
+            return 90;  // Night: 1.5 hours
+        } else {
+            return 30;  // Late night: 30 min
+        }
     }
-
+    
     return idle_mins;
 }
 
+// Get neuromorphic SNN suggestion
 static const char* get_snn_suggestion_wrapper(int* out_activity_idx) {
-    static const char* last_suggestion = NULL;
+    static const char* last_suggestion = NULL;  // Track last suggestion
     static uint8_t retry_count = 0;
-
+    
+    // Calculate idle time
     int idle_mins = get_idle_minutes_until_next_event();
-
+    
+    // Check if there's an upcoming meeting
     int has_meeting = 0;
     int current_mins = g_ml.current_hour * 60 + g_ml.current_minute;
     for (uint8_t i = 0; i < g_event_count; i++) {
@@ -500,15 +501,18 @@ static const char* get_snn_suggestion_wrapper(int* out_activity_idx) {
             break;
         }
     }
-
+    
+    // Vary the engagement and energy slightly to get different suggestions
     int varied_energy = g_ml.energy_level;
     int varied_engagement = g_ml.engagement;
-
+    
+    // Add some variation based on retry count to avoid repetition
     if (retry_count > 0) {
-        varied_energy     = (g_ml.energy_level  + retry_count * 15) % 100;
-        varied_engagement = (g_ml.engagement    + retry_count * 20) % 100;
+        varied_energy = (g_ml.energy_level + retry_count * 15) % 100;
+        varied_engagement = (g_ml.engagement + retry_count * 20) % 100;
     }
-
+    
+    // Get SNN suggestion (using renamed function to avoid conflict)
     const char* suggestion = get_snn_proactive_suggestion(
         g_ml.current_hour,
         g_ml.current_minute,
@@ -520,34 +524,42 @@ static const char* get_snn_suggestion_wrapper(int* out_activity_idx) {
         (g_ml.total_accepts > 10) ? 10 : g_ml.total_accepts,
         (g_ml.total_rejects > 10) ? 10 : g_ml.total_rejects
     );
-
+    
+    // If same as last suggestion, try again with variation
     if (last_suggestion != NULL && retry_count < 5) {
+        // Simple string comparison (works because we're comparing pointers to string literals)
         uint8_t same = 1;
         const char* p1 = last_suggestion;
         const char* p2 = suggestion;
         while (*p1 && *p2) {
-            if (*p1 != *p2) { same = 0; break; }
-            p1++; p2++;
+            if (*p1 != *p2) {
+                same = 0;
+                break;
+            }
+            p1++;
+            p2++;
         }
         if (*p1 != *p2) same = 0;
-
+        
         if (same) {
             retry_count++;
-            return get_snn_suggestion_wrapper(out_activity_idx);
+            return get_snn_suggestion_wrapper(out_activity_idx);  // Recursively try again
         }
     }
-
+    
+    // Reset retry count and save this suggestion
     retry_count = 0;
     last_suggestion = suggestion;
-
-    *out_activity_idx = 0;
+    
+    // Find matching activity index (for calendar integration)
+    *out_activity_idx = 0;  // Default
     for (int i = 0; i < UC_OUTPUT_SIZE; i++) {
         if (suggestion == ACTIVITY_NAMES[i]) {
-            *out_activity_idx = i % NUM_ACTIVITIES;
+            *out_activity_idx = i % NUM_ACTIVITIES;  // Map to existing activities
             break;
         }
     }
-
+    
     return suggestion;
 }
 
@@ -567,19 +579,22 @@ static void ml_record_feedback(uint8_t idx, uint8_t accepted) {
 // CARPLAY-STYLE HOME SCREEN
 // =============================================================================
 
-static void draw_app_icon(int x, int y, const char* icon, const char* name,
+static void draw_app_icon(int x, int y, const char* icon, const char* name, 
                          uint8_t fg_color, uint8_t bg_color, uint8_t selected) {
-    uint8_t border_color = selected ?
-        ((COLOR_YELLOW << 4) | fg_color) :
+    // Draw app tile
+    uint8_t border_color = selected ? 
+        ((COLOR_YELLOW << 4) | fg_color) : 
         ((bg_color << 4) | fg_color);
-
+    
     fill_box(x, y, 16, 6, (bg_color << 4) | fg_color);
     draw_box(x, y, 16, 6, border_color);
-
+    
+    // Draw icon (centered)
     int icon_len = strlen(icon);
     int icon_x = x + (16 - icon_len) / 2;
     draw_text(icon, icon_x, y + 2, (bg_color << 4) | COLOR_WHITE);
-
+    
+    // Draw name (centered)
     int name_len = strlen(name);
     int name_x = x + (16 - name_len) / 2;
     draw_text(name, name_x, y + 4, (bg_color << 4) | COLOR_WHITE);
@@ -587,48 +602,66 @@ static void draw_app_icon(int x, int y, const char* icon, const char* name,
 
 static void draw_home_screen(uint8_t selected_app) {
     clear_screen();
-
+    
+    // Dark background
     set_color(COLOR_WHITE, COLOR_BLACK);
     for (int y = 0; y < VGA_HEIGHT; y++) {
         for (int x = 0; x < VGA_WIDTH; x++) {
             putchar_at(' ', x, y, current_color);
         }
     }
-
+    
+    // Title bar
     fill_box(0, 0, VGA_WIDTH, 3, (COLOR_DARK_GRAY << 4) | COLOR_WHITE);
-
+    
+    // Time display
     char time_str[10];
     char hour_buf[3], min_buf[3];
     two_digit_str(g_ml.current_hour, hour_buf);
     two_digit_str(g_ml.current_minute, min_buf);
-    time_str[0] = hour_buf[0]; time_str[1] = hour_buf[1];
+    time_str[0] = hour_buf[0];
+    time_str[1] = hour_buf[1];
     time_str[2] = ':';
-    time_str[3] = min_buf[0]; time_str[4] = min_buf[1];
+    time_str[3] = min_buf[0];
+    time_str[4] = min_buf[1];
     time_str[5] = '\0';
     draw_text(time_str, VGA_WIDTH - 8, 1, (COLOR_DARK_GRAY << 4) | COLOR_WHITE);
-
+    
+    // App name
     draw_centered_text("MiniOS CarPlay", 1, (COLOR_DARK_GRAY << 4) | COLOR_WHITE);
-
-    int start_x = 20, start_y = 6, spacing = 20;
-
-    draw_app_icon(start_x, start_y,
-                  " [CAL] ", "Calendar",
-                  COLOR_WHITE, COLOR_RED, selected_app == 0);
-
+    
+    // Apps grid (2x2 for now)
+    int start_x = 20;
+    int start_y = 6;
+    int spacing = 20;
+    
+    // Calendar app (position 0)
+    draw_app_icon(start_x, start_y, 
+                  " [CAL] ", "Calendar", 
+                  COLOR_WHITE, COLOR_RED, 
+                  selected_app == 0);
+    
+    // Maps app (position 1)
     draw_app_icon(start_x + spacing, start_y,
-                  " [AI] ", "Suggester",
-                  COLOR_WHITE, COLOR_LIGHT_BLUE, selected_app == 1);
-
+                  " [MAP] ", "Maps",
+                  COLOR_WHITE, COLOR_LIGHT_BLUE,
+                  selected_app == 1);
+    
+    // Phone app (position 2)
     draw_app_icon(start_x, start_y + 8,
-                  " [MEM] ", "Memory",
-                  COLOR_WHITE, COLOR_LIGHT_MAGENTA, selected_app == 2);
-
+                  " [PHN] ", "Phone",
+                  COLOR_WHITE, COLOR_LIGHT_MAGENTA,
+                  selected_app == 2);
+    
+    // Music app (position 3)
     draw_app_icon(start_x + spacing, start_y + 8,
-                  " [SET] ", "Settings",
-                  COLOR_WHITE, COLOR_DARK_GRAY, selected_app == 3);
-
+                  " [MUS] ", "Music",
+                  COLOR_WHITE, COLOR_DARK_GRAY,
+                  selected_app == 3);
+    
+    // Instructions at bottom
     fill_box(0, VGA_HEIGHT - 2, VGA_WIDTH, 2, (COLOR_DARK_GRAY << 4) | COLOR_WHITE);
-    draw_centered_text("Arrow Keys: Navigate | Enter: Open | Q: Quit",
+    draw_centered_text("Arrow Keys: Navigate | Enter: Open | Q: Quit", 
                       VGA_HEIGHT - 1, (COLOR_DARK_GRAY << 4) | COLOR_LIGHT_GREEN);
 }
 
@@ -638,10 +671,12 @@ static void draw_home_screen(uint8_t selected_app) {
 
 static void draw_calendar_app(uint8_t scroll_pos) {
     clear_screen();
-
+    
+    // Header
     fill_box(0, 0, VGA_WIDTH, 3, (COLOR_RED << 4) | COLOR_WHITE);
     draw_centered_text("Calendar - Today's Schedule", 1, (COLOR_RED << 4) | COLOR_WHITE);
-
+    
+    // Time display
     char time_str[10];
     char h[3], m[3];
     two_digit_str(g_ml.current_hour, h);
@@ -649,18 +684,23 @@ static void draw_calendar_app(uint8_t scroll_pos) {
     time_str[0] = h[0]; time_str[1] = h[1]; time_str[2] = ':';
     time_str[3] = m[0]; time_str[4] = m[1]; time_str[5] = '\0';
     draw_text(time_str, 2, 1, (COLOR_RED << 4) | COLOR_WHITE);
-
+    
+    // Legend
     draw_text("Scheduled", 10, 4, (COLOR_BLACK << 4) | COLOR_LIGHT_CYAN);
     draw_text("AI Suggest", 30, 4, (COLOR_BLACK << 4) | COLOR_YELLOW);
-
+    
+    // Event list
     int y = 6;
     for (uint8_t i = scroll_pos; i < g_event_count && y < VGA_HEIGHT - 3; i++) {
         CalendarEvent* evt = &g_events[i];
+        
+        // Background color based on event type
         uint8_t bg = evt->is_suggestion ? COLOR_YELLOW : COLOR_LIGHT_CYAN;
         uint8_t fg = COLOR_BLACK;
-
+        
         fill_box(2, y, VGA_WIDTH - 4, 2, (bg << 4) | fg);
-
+        
+        // Time
         char time[10];
         char hh[3], mm[3];
         two_digit_str(evt->hour, hh);
@@ -668,23 +708,29 @@ static void draw_calendar_app(uint8_t scroll_pos) {
         time[0] = hh[0]; time[1] = hh[1]; time[2] = ':';
         time[3] = mm[0]; time[4] = mm[1]; time[5] = '\0';
         draw_text(time, 4, y, (bg << 4) | fg);
+        
+        // Title
         draw_text(evt->title, 13, y, (bg << 4) | fg);
-
+        
+        // Duration
         char dur[10];
         uint_to_str(evt->duration, dur);
         draw_text(dur, VGA_WIDTH - 10, y, (bg << 4) | fg);
         draw_text("min", VGA_WIDTH - 7, y, (bg << 4) | fg);
-
+        
+        // Type indicator
         if (evt->is_suggestion) {
             draw_text("[AI]", 4, y + 1, (bg << 4) | COLOR_MAGENTA);
         } else {
             draw_text("[  ]", 4, y + 1, (bg << 4) | fg);
         }
+        
         y += 3;
     }
-
+    
+    // Bottom bar
     fill_box(0, VGA_HEIGHT - 2, VGA_WIDTH, 2, (COLOR_DARK_GRAY << 4) | COLOR_WHITE);
-    draw_centered_text("Up/Down: Scroll | B: Back | A: Add AI Suggestion",
+    draw_centered_text("Up/Down: Scroll | B: Back | A: Add AI Suggestion", 
                       VGA_HEIGHT - 1, (COLOR_DARK_GRAY << 4) | COLOR_LIGHT_GREEN);
 }
 
@@ -707,6 +753,7 @@ typedef struct {
     uint8_t auto_execute;
 } ProactiveSuggestion;
 
+// Suggestions database
 static ProactiveSuggestion meeting_suggestions[] = {
     {ACTION_SILENCE_PHONE, "Silence phone for meeting", 90, 1},
     {ACTION_REVIEW_AGENDA, "Review meeting agenda", 80, 0},
@@ -731,38 +778,61 @@ static ProactiveSuggestion break_suggestions[] = {
 
 static uint8_t g_shown_suggestions[MAX_EVENTS] = {0};
 
+// Check if string contains substring
 static uint8_t str_contains(const char* str, const char* substr) {
     while (*str) {
         const char* s1 = str;
         const char* s2 = substr;
-        while (*s1 && *s2 && *s1 == *s2) { s1++; s2++; }
+        while (*s1 && *s2 && *s1 == *s2) {
+            s1++; s2++;
+        }
         if (!*s2) return 1;
         str++;
     }
     return 0;
 }
 
+// Get proactive suggestion for event
 static ProactiveSuggestion* get_proactive_suggestion(uint8_t event_idx, uint8_t* count) {
-    if (event_idx >= g_event_count) return 0;
+    if (event_idx >= g_event_count) return NULL;
+    
     CalendarEvent* evt = &g_events[event_idx];
     const char* title = evt->title;
-
-    if (str_contains(title, "Meeting")) { *count = 3; return meeting_suggestions; }
-    else if (str_contains(title, "Lunch")) { *count = 3; return lunch_suggestions; }
-    else if (str_contains(title, "Project") || str_contains(title, "Work")) { *count = 2; return work_suggestions; }
-    else if (str_contains(title, "Coffee") || str_contains(title, "Break")) { *count = 2; return break_suggestions; }
-    return 0;
+    
+    if (str_contains(title, "Meeting")) {
+        *count = 3;
+        return meeting_suggestions;
+    } else if (str_contains(title, "Lunch")) {
+        *count = 3;
+        return lunch_suggestions;
+    } else if (str_contains(title, "Project") || str_contains(title, "Work")) {
+        *count = 2;
+        return work_suggestions;
+    } else if (str_contains(title, "Coffee") || str_contains(title, "Break")) {
+        *count = 2;
+        return break_suggestions;
+    }
+    
+    return NULL;
 }
 
+// Check for upcoming events needing proactive suggestions
 static int8_t check_for_proactive_event(uint8_t current_hour, uint8_t current_minute) {
     int16_t current_mins = current_hour * 60 + current_minute;
+    
     for (uint8_t i = 0; i < g_event_count; i++) {
-        if (g_shown_suggestions[i]) continue;
+        if (g_shown_suggestions[i]) continue;  // Already suggested
+        
         CalendarEvent* evt = &g_events[i];
         int16_t event_mins = evt->hour * 60 + evt->minute;
         int16_t diff = event_mins - current_mins;
-        if (diff >= 8 && diff <= 10) return i;
+        
+        // Suggest 8-10 minutes before (narrower window)
+        if (diff >= 8 && diff <= 10) {
+            return i;
+        }
     }
+    
     return -1;
 }
 
@@ -770,31 +840,41 @@ static int8_t check_for_proactive_event(uint8_t current_hour, uint8_t current_mi
 // PROACTIVE NOTIFICATION UI
 // =============================================================================
 
-static void draw_proactive_notification(const char* event_title,
+static void draw_proactive_notification(const char* event_title, 
                                        ProactiveSuggestion* suggestion,
                                        uint8_t show_actions) {
+    // Notification popup (center of screen)
     int popup_y = 8;
     int popup_h = show_actions ? 10 : 8;
-
-    fill_box(10, popup_y, VGA_WIDTH - 20, popup_h,
+    
+    // Semi-transparent background (dark gray)
+    fill_box(10, popup_y, VGA_WIDTH - 20, popup_h, 
             (COLOR_DARK_GRAY << 4) | COLOR_WHITE);
     draw_box(10, popup_y, VGA_WIDTH - 20, popup_h,
             (COLOR_YELLOW << 4) | COLOR_BLACK);
-
-    draw_text(" [!] ", 12, popup_y + 1,
+    
+    // Icon
+    draw_text(" [!] ", 12, popup_y + 1, 
              (COLOR_DARK_GRAY << 4) | COLOR_YELLOW);
+    
+    // Title
     draw_text("PROACTIVE SUGGESTION", 20, popup_y + 1,
              (COLOR_DARK_GRAY << 4) | COLOR_YELLOW);
+    
+    // Event context
     draw_text("Upcoming: ", 12, popup_y + 3,
              (COLOR_DARK_GRAY << 4) | COLOR_LIGHT_CYAN);
     draw_text(event_title, 23, popup_y + 3,
              (COLOR_DARK_GRAY << 4) | COLOR_WHITE);
+    
+    // Suggestion
     draw_text("Suggestion:", 12, popup_y + 5,
              (COLOR_DARK_GRAY << 4) | COLOR_LIGHT_GREEN);
     draw_text(suggestion->description, 12, popup_y + 6,
              (COLOR_DARK_GRAY << 4) | COLOR_WHITE);
-
+    
     if (show_actions) {
+        // Action prompt
         if (suggestion->auto_execute) {
             draw_text("[AUTO] Executing... (N to cancel)", 12, popup_y + 8,
                      (COLOR_DARK_GRAY << 4) | COLOR_LIGHT_RED);
@@ -806,7 +886,7 @@ static void draw_proactive_notification(const char* event_title,
 }
 
 // =============================================================================
-// SCREEN TYPE
+// UI STATE  (file-scope so all tasks can share it)
 // =============================================================================
 
 typedef enum {
@@ -817,47 +897,31 @@ typedef enum {
     SCREEN_SETTINGS
 } ScreenType;
 
-// =============================================================================
-// UI STATE  (was local to kernel_main; now file-scope for multi-task access)
-// =============================================================================
-
 static ScreenType g_current_screen   = SCREEN_HOME;
 static uint8_t    g_selected_app     = 0;
 static uint8_t    g_scroll_pos       = 0;
 // Set to 1 by task_metrics while a proactive notification is showing.
 // task_ui checks this and skips key processing so the key isn't consumed
 // before task_metrics can read it.
-static volatile uint8_t g_notification_active = 0;
+volatile uint8_t  g_notification_active = 0;
 
 // =============================================================================
-// SCHEDULER: task_init, scheduler_tick, yield, task_sleep
+// SCHEDULER FUNCTIONS  (task_init, scheduler_tick, yield, task_sleep,
+// sched_status_str). Declarations live in kernel/scheduler.h.
 // =============================================================================
 
-// Build the initial stack frame so that the first switch_context into this task
-// causes it to begin executing entry().
-//
-// switch_context unwinds frames in this order:
-//   popf        → EFLAGS     (4 bytes)
-//   popa        → 8 GP regs  (32 bytes) in POPA order: EDI,ESI,EBP,skip,EBX,EDX,ECX,EAX
-//   pop ebp     → saved ebp  (4 bytes)
-//   ret         → task entry function
-//
-// So we build the stack top-down as:
-//   entry()     ← ret will jump here
-//   0           ← pop ebp  ← ebp_ptr points here
-//   8 × 0       ← popa
-//   0x00000202  ← popf (IF=1 enables interrupts; bit 1 always set)
-//   ← task->esp points here
-static void task_init(Task *t, uint8_t priority, void (*entry)(void),
-                      uint8_t *stack_buf, uint32_t stack_size) {
-    uint32_t *sp = (uint32_t *)(stack_buf + stack_size);   // top of stack
+sched_status_t task_init(Task *t, uint8_t priority, void (*entry)(void),
+                         uint8_t *stack_buf, uint32_t stack_size) {
+    if (!t || !entry || !stack_buf) return SCHED_ERR_NULL_PTR;
+    if (priority >= NUM_TASKS)       return SCHED_ERR_BAD_PRIORITY;
+    if (stack_size < MIN_TASK_STACK) return SCHED_ERR_STACK_TOO_SMALL;
 
-    *--sp = (uint32_t)entry;    // ret target → task entry function
-    uint32_t *ebp_ptr = sp;     // address of the frame's "saved ebp" slot
-    *--sp = 0;                  // saved ebp (popped by "pop ebp" in switch_context)
-
-    for (int i = 0; i < 8; i++) *--sp = 0;   // zero GP registers for popa
-    *--sp = 0x00000202;         // EFLAGS: IF=1 (bit 9), reserved bit 1 always 1
+    uint32_t *sp = (uint32_t *)(stack_buf + stack_size);
+    *--sp = (uint32_t)entry;
+    uint32_t *ebp_ptr = sp;
+    *--sp = 0;
+    for (int i = 0; i < 8; i++) *--sp = 0;
+    *--sp = SCHED_EFLAGS_INIT;
 
     t->esp       = (uint32_t)sp;
     t->ebp       = (uint32_t)ebp_ptr;
@@ -865,14 +929,24 @@ static void task_init(Task *t, uint8_t priority, void (*entry)(void),
     t->priority  = priority;
     t->stack_top = (uint32_t)(stack_buf + stack_size);
     t->wake_tick = 0;
+    return SCHED_OK;
 }
 
-// Called from isr_pit (scheduler.asm) every 1 ms.
-// Also called directly by yield() for cooperative preemption.
+const char *sched_status_str(sched_status_t s) {
+    switch (s) {
+    case SCHED_OK:                  return "ok";
+    case SCHED_ERR_NULL_PTR:        return "null pointer argument";
+    case SCHED_ERR_BAD_PRIORITY:    return "priority out of range";
+    case SCHED_ERR_STACK_TOO_SMALL: return "stack too small";
+    case SCHED_ERR_BAD_STATE:       return "invalid scheduler state";
+    default:                        return "unknown scheduler error";
+    }
+}
+
+// Called from isr_pit (scheduler.asm) every 1 ms, and by yield()/task_sleep().
 void __attribute__((used)) scheduler_tick(void) {
     g_tick++;
 
-    // Wake any task whose sleep timer has expired
     for (int i = 0; i < NUM_TASKS; i++) {
         if (g_tasks[i].state == TASK_SLEEPING && g_tick >= g_tasks[i].wake_tick) {
             g_tasks[i].state = TASK_READY;
@@ -880,120 +954,133 @@ void __attribute__((used)) scheduler_tick(void) {
         }
     }
 
-    // Find highest-priority READY task (lowest priority number wins)
     int8_t best = -1;
     for (int i = 0; i < NUM_TASKS; i++) {
-        if (g_tasks[i].state == TASK_READY) {
-            best = (int8_t)i;
-            break;
-        }
+        if (g_tasks[i].state == TASK_READY) { best = (int8_t)i; break; }
     }
-    if (best < 0) best = NUM_TASKS - 1;   // fallback: idle task
+    if (best < 0) best = NUM_TASKS - 1;
 
-    if ((uint8_t)best == g_current_task) return;  // no switch needed
+    if ((uint8_t)best == g_current_task) return;
 
-    // Preempt the current task — mark it READY so it can run again
     uint8_t prev = g_current_task;
-    g_tasks[prev].state  = TASK_READY;
-    g_ready_mask |= (uint8_t)(1 << prev);
+    if (g_tasks[prev].state == TASK_RUNNING) {
+        g_tasks[prev].state  = TASK_READY;
+        g_ready_mask |= (uint8_t)(1 << prev);
+    }
 
-    // Promote the chosen task to RUNNING
     g_tasks[best].state  = TASK_RUNNING;
     g_ready_mask &= (uint8_t)~(1 << best);
     g_current_task = (uint8_t)best;
 
     switch_context(&g_tasks[prev], &g_tasks[best]);
-    // Execution resumes here when `prev` is scheduled again
 }
 
-// Voluntarily relinquish the CPU — used at the end of each task's work unit.
-static void yield(void) {
+void yield(void) {
     g_tasks[g_current_task].state = TASK_READY;
     g_ready_mask |= (uint8_t)(1 << g_current_task);
     scheduler_tick();
 }
 
-// Put the current task to sleep for `ticks` milliseconds.
-// Calls scheduler_tick() directly (not yield) to avoid yield() overwriting
-// the SLEEPING state with READY before the scheduler sees it.
-static void task_sleep(uint32_t ticks) {
+void task_sleep(uint32_t ticks) {
     uint8_t idx            = g_current_task;
     g_tasks[idx].state     = TASK_SLEEPING;
     g_tasks[idx].wake_tick = g_tick + ticks;
     g_ready_mask &= (uint8_t)~(1 << idx);
     scheduler_tick();
-    // Resumes here after wake_tick is reached (set READY by scheduler_tick)
 }
 
 // =============================================================================
-// TASK 3 — Idle Task (priority 3, lowest)
-// Executes HLT so the CPU halts until the next interrupt (the PIT).
-// EFLAGS.IF is guaranteed set by task_init (0x00000202).
+// TASK 3 — Idle Task (priority 3, lowest). HLT until next interrupt.
 // =============================================================================
-static void task_idle(void) {
-    while (1) {
-        __asm__ volatile("hlt");
-        // After HLT, the PIT fires, scheduler_tick may switch to a higher-priority task.
-        // If we end up back here, HLT again.
-    }
+void task_idle(void) {
+    while (1) { __asm__ volatile("hlt"); }
 }
 
 // =============================================================================
-// TASK 1 — SNN Inference Engine (priority 1)
-// Neuromorphic hook: runs SNN inference and adds a suggestion to the calendar,
-// then sleeps for SNN_WAKE_INTERVAL ticks (30 real minutes at 1 kHz).
+// TASK 1 — SNN Inference Engine (priority 1).
+// Mirrors the reference's "every 30 (virtual) minutes" proactive add with the
+// anti-repeat buffer. Polls once per second of virtual time.
 // =============================================================================
-static void task_snn(void) {
+void task_snn(void) {
+    static uint8_t      last_suggestion_minute = 255;
+    static const char  *last_3_suggestions[3]  = {NULL, NULL, NULL};
+    static uint8_t      suggestion_index       = 0;
+
     while (1) {
-        int activity_idx = 0;
-        const char *sug = get_snn_suggestion_wrapper(&activity_idx);
+        if ((g_ml.current_minute == 0 || g_ml.current_minute == 30) &&
+            g_ml.current_minute != last_suggestion_minute) {
+            last_suggestion_minute = g_ml.current_minute;
 
-        if (g_event_count < MAX_EVENTS) {
-            uint8_t next_hour = (g_ml.current_hour + 1) % 24;
-            g_events[g_event_count++] = (CalendarEvent){
-                next_hour, 0, 15,
-                sug,
-                1,                           // is AI suggestion
-                (uint8_t)(activity_idx % 6)
-            };
+            int idle_mins = get_idle_minutes_until_next_event();
 
-            // Refresh display if calendar is open
-            if (g_current_screen == SCREEN_CALENDAR) {
-                draw_calendar_app(g_scroll_pos);
+            if (idle_mins >= 30 || idle_mins == 0) {
+                if (idle_mins == 0) idle_mins = 180;
+
+                int activity_idx;
+                const char *snn_suggestion = get_snn_suggestion_wrapper(&activity_idx);
+
+                uint8_t is_repeat = 0;
+                for (int i = 0; i < 3; i++) {
+                    if (last_3_suggestions[i] == snn_suggestion) { is_repeat = 1; break; }
+                }
+                if (is_repeat) {
+                    uint8_t saved = g_ml.engagement;
+                    g_ml.engagement = (g_ml.engagement + 30) % 100;
+                    snn_suggestion = get_snn_suggestion_wrapper(&activity_idx);
+                    g_ml.engagement = saved;
+                }
+
+                if (g_event_count < MAX_EVENTS) {
+                    uint8_t suggest_hour   = g_ml.current_hour;
+                    uint8_t suggest_minute = g_ml.current_minute + 5;
+                    if (suggest_minute >= 60) {
+                        suggest_minute -= 60;
+                        suggest_hour = (suggest_hour + 1) % 24;
+                    }
+
+                    g_events[g_event_count++] = (CalendarEvent){
+                        suggest_hour, suggest_minute, 15,
+                        snn_suggestion, 1, (uint8_t)(activity_idx % 6)
+                    };
+
+                    last_3_suggestions[suggestion_index % 3] = snn_suggestion;
+                    suggestion_index++;
+
+                    if (g_current_screen == SCREEN_CALENDAR) {
+                        draw_calendar_app(g_scroll_pos);
+                    }
+                }
             }
         }
 
-        task_sleep(SNN_WAKE_INTERVAL);   // sleep 30 real minutes
+        task_sleep(1000);  // poll virtual-time gates once per real second
     }
 }
 
 // =============================================================================
-// TASK 2 — System Metrics / Proactive AI (priority 2)
-// Advances virtual time, detects upcoming calendar events 8-10 min ahead,
-// shows proactive notifications, and drives the blink indicator.
+// TASK 2 — System Metrics / Proactive AI (priority 2).
+// Advances virtual time, runs the 8-10-min proactive notification flow, and
+// drives the blink indicator.
 // =============================================================================
-static void task_metrics(void) {
+void task_metrics(void) {
     uint32_t last_metrics_tick = 0;
     uint32_t last_blink_tick   = 0;
     uint8_t  blink_state       = 0;
 
     while (1) {
-        // Advance virtual ML context every 100 real ms
         if (g_tick - last_metrics_tick >= 100) {
             last_metrics_tick = g_tick;
             ml_update_context(100000, !keyboard_has_data());
 
-            // Check for upcoming events (8-10 min window)
             int8_t event_idx = check_for_proactive_event(
                 g_ml.current_hour, g_ml.current_minute);
 
             if (event_idx >= 0) {
                 uint8_t count = 0;
-                ProactiveSuggestion* suggestions = get_proactive_suggestion(
+                ProactiveSuggestion *suggestions = get_proactive_suggestion(
                     (uint8_t)event_idx, &count);
 
                 if (suggestions && count > 0) {
-                    // Lock out task_ui from consuming keys during notification
                     g_notification_active = 1;
 
                     draw_proactive_notification(
@@ -1003,13 +1090,11 @@ static void task_metrics(void) {
 
                     g_shown_suggestions[event_idx] = 1;
 
-                    // Poll for user response with 300-second timeout
-                    uint32_t timeout_end   = g_tick + 300000;
-                    uint32_t last_disp     = g_tick;
-                    uint8_t  responded     = 0;
+                    uint32_t timeout_end = g_tick + 300000;  // 300 s
+                    uint32_t last_disp   = g_tick;
+                    uint8_t  responded   = 0;
 
                     while (!responded && g_tick < timeout_end) {
-                        // Update countdown every second
                         if (g_tick - last_disp >= 1000) {
                             last_disp = g_tick;
                             uint32_t secs_left = (timeout_end - g_tick) / 1000;
@@ -1032,21 +1117,18 @@ static void task_metrics(void) {
                         char key = check_key();
 
                         if (key == 'y') {
-                            // Accept — insert 5-min prep slot before the event
                             fill_box(12, 15, VGA_WIDTH - 24, 3,
                                     (COLOR_LIGHT_GREEN << 4) | COLOR_BLACK);
                             draw_text("Suggestion accepted!", 14, 15,
                                     (COLOR_LIGHT_GREEN << 4) | COLOR_BLACK);
                             draw_text("Adding to calendar...", 14, 16,
                                     (COLOR_LIGHT_GREEN << 4) | COLOR_BLACK);
-
-                            task_sleep(500);  // brief visual delay
+                            task_sleep(500);
 
                             if (g_event_count < MAX_EVENTS) {
-                                CalendarEvent* evt = &g_events[event_idx];
+                                CalendarEvent *evt = &g_events[event_idx];
                                 uint8_t new_hour   = evt->hour;
                                 uint8_t new_minute = evt->minute;
-
                                 if (new_minute >= 5) {
                                     new_minute -= 5;
                                 } else {
@@ -1054,7 +1136,6 @@ static void task_metrics(void) {
                                     new_hour = (new_hour > 0) ? new_hour - 1 : 23;
                                 }
 
-                                // Shift existing events forward by one slot
                                 for (int i = (int)g_event_count; i > (int)event_idx; i--) {
                                     g_events[i] = g_events[i - 1];
                                 }
@@ -1062,14 +1143,14 @@ static void task_metrics(void) {
                                     g_shown_suggestions[i] = g_shown_suggestions[i - 1];
                                 }
 
-                                g_events[event_idx].hour         = new_hour;
-                                g_events[event_idx].minute       = new_minute;
-                                g_events[event_idx].duration     = 5;
-                                g_events[event_idx].title        = suggestions[0].description;
+                                g_events[event_idx].hour          = new_hour;
+                                g_events[event_idx].minute        = new_minute;
+                                g_events[event_idx].duration      = 5;
+                                g_events[event_idx].title         = suggestions[0].description;
                                 g_events[event_idx].is_suggestion = 1;
-                                g_events[event_idx].category     = 7;
-                                g_shown_suggestions[event_idx]       = 1;
-                                g_shown_suggestions[event_idx + 1]   = 1;
+                                g_events[event_idx].category      = 7;
+                                g_shown_suggestions[event_idx]        = 1;
+                                g_shown_suggestions[event_idx + 1]    = 1;
                                 g_event_count++;
 
                                 fill_box(12, 15, VGA_WIDTH - 24, 2,
@@ -1087,7 +1168,6 @@ static void task_metrics(void) {
                             responded = 1;
 
                         } else if (key == 'n') {
-                            // Dismiss
                             fill_box(12, 15, VGA_WIDTH - 24, 2,
                                     (COLOR_LIGHT_RED << 4) | COLOR_WHITE);
                             draw_text("Suggestion dismissed", 14, 15,
@@ -1096,12 +1176,11 @@ static void task_metrics(void) {
                             responded = 1;
                         }
 
-                        if (!responded) task_sleep(100);  // 100 ms poll interval
+                        if (!responded) task_sleep(100);
                     }
 
                     g_notification_active = 0;
 
-                    // Redraw whichever screen was active
                     if (g_current_screen == SCREEN_HOME) {
                         draw_home_screen(g_selected_app);
                     } else if (g_current_screen == SCREEN_CALENDAR) {
@@ -1111,7 +1190,6 @@ static void task_metrics(void) {
             }
         }
 
-        // Blink indicator (toggle every 500 ms)
         if (g_tick - last_blink_tick >= 500) {
             last_blink_tick = g_tick;
             blink_state ^= 1;
@@ -1129,13 +1207,11 @@ static void task_metrics(void) {
 }
 
 // =============================================================================
-// TASK 0 — UI / Input Handler (priority 0, highest)
-// Handles all keyboard input and screen navigation.
-// When a proactive notification is active, keys are reserved for task_metrics.
+// TASK 0 — UI / Input Handler (priority 0, highest).
+// Mirrors the reference's keyboard handling for home + calendar screens.
 // =============================================================================
-static void task_ui(void) {
+void task_ui(void) {
     while (1) {
-        // While notification is active, do not consume keyboard events
         if (g_notification_active) {
             yield();
             continue;
@@ -1174,15 +1250,13 @@ static void task_ui(void) {
                     g_current_screen = SCREEN_HOME;
                     draw_home_screen(g_selected_app);
                 } else if (key == 'a') {
-                    int activity_idx = 0;
-                    const char* snn_suggestion = get_snn_suggestion_wrapper(&activity_idx);
+                    int activity_idx;
+                    const char *snn_suggestion = get_snn_suggestion_wrapper(&activity_idx);
                     if (g_event_count < MAX_EVENTS) {
                         uint8_t next_hour = (g_ml.current_hour + 1) % 24;
                         g_events[g_event_count++] = (CalendarEvent){
                             next_hour, 0, 15,
-                            snn_suggestion,
-                            1,
-                            (uint8_t)(activity_idx % 6)
+                            snn_suggestion, 1, (uint8_t)(activity_idx % 6)
                         };
                         draw_calendar_app(g_scroll_pos);
                     }
@@ -1195,21 +1269,19 @@ static void task_ui(void) {
 }
 
 // =============================================================================
-// KERNEL MAIN — initialise hardware and scheduler, then enter task 0
+// KERNEL MAIN — initialise hardware and scheduler, then hand off to task 0.
 // =============================================================================
-
 void kernel_main(uint32_t magic, uint32_t addr) {
     (void)addr;
     if (magic != 0x2BADB002) return;
 
-    // ── ML / Calendar initialisation (unchanged) ───────────────────────────
-    g_ml.energy_level  = 80;
-    g_ml.engagement    = 50;
-    g_ml.current_hour  = 8;    // Start at 8:30 AM
+    // ── ML / Calendar initialisation ───────────────────────────────────────
+    g_ml.energy_level   = 80;
+    g_ml.engagement     = 50;
+    g_ml.current_hour   = 8;    // Start at 8:30 AM
     g_ml.current_minute = 30;
-    g_ml.day_of_week   = 0;    // Monday
-    // 8 h 30 min = 510 min from midnight; 510 × 1,000,000 cycles/min
-    g_ml.cycles = 510000000;
+    g_ml.day_of_week    = 0;    // Monday
+    g_ml.cycles         = 510000000;   // 8 h 30 min × 1M cycles/min
 
     init_calendar();
 
@@ -1229,21 +1301,15 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     // ── Initial screen draw ────────────────────────────────────────────────
     draw_home_screen(g_selected_app);
 
-    // ── Bootstrap: transfer control to task 0 ─────────────────────────────
-    // Mark task 0 as RUNNING and remove it from the ready mask.
+    // ── Bootstrap: hand control to task 0. ─────────────────────────────────
     g_tasks[0].state = TASK_RUNNING;
-    g_ready_mask &= ~(uint8_t)0x01;
-    g_current_task = 0;
+    g_ready_mask    &= ~(uint8_t)0x01;
+    g_current_task   = 0;
 
-    // Enable interrupts — PIT will start firing after sti.
-    __asm__ volatile("sti");
-
-    // Use a static dummy TCB to absorb the save of the current (bootstrap)
-    // stack frame. The dummy is never added to g_ready_mask, so the scheduler
-    // can never pick it; kernel_main effectively terminates here.
+    // Dummy TCB absorbs the save of kernel_main's frame. Never re-scheduled.
     static Task dummy_task;
     switch_context(&dummy_task, &g_tasks[0]);
 
-    // Unreachable — if we somehow return, halt cleanly.
-    __asm__ volatile("cli; hlt");
+    __asm__ volatile("cli; hlt");   // unreachable
 }
+

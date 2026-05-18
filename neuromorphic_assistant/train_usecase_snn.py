@@ -3,179 +3,152 @@
 Train Neuromorphic SNN on Real Use Cases
 With default preferences and proactive suggestions
 
-Features:
-- Fills idle time proactively (not just reactive)
-- Learns from accept/reject feedback
-- Context-aware suggestions
-- Default preferences that adapt
+Usage:
+    python train_usecase_snn.py --train          # Train and save model
+    python train_usecase_snn.py --benchmark-gpu  # Measure GPU inference energy
+    python train_usecase_snn.py --loihi          # Estimate Loihi 2 energy
 """
 
+import argparse
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 import snntorch as snn
 from snntorch import surrogate
-from snntorch import functional as SF
 import numpy as np
 import json
 import time
 from datetime import datetime
 
-# Import use case data
-from use_case_data import (
-    generate_use_case_training_data,
-    ACTIVITY_LABELS,
-    UserProfile,
-    USE_CASES
-)
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-# Try to import psutil for RAM monitoring
+DATASET_PATH = 'general_assistant_dataset_update.csv'
+
 try:
     import psutil
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
-    print("⚠️  psutil not available - RAM monitoring disabled")
+    print("psutil not available - RAM/CPU monitoring disabled")
 
-# Try to import NVML for NVIDIA GPU monitoring
 try:
     import pynvml
     NVML_AVAILABLE = True
 except ImportError:
     NVML_AVAILABLE = False
 
+MODEL_PATH = 'minios_usecase_model.pth'
+
+def _detect_gpu_type() -> str:
+    """Lightweight GPU detection — no monitor object needed."""
+    if torch.cuda.is_available():
+        return 'nvidia'
+    try:
+        import torch_directml
+        if torch_directml.is_available():
+            return 'amd_directml'
+    except ImportError:
+        pass
+    return 'cpu'
+
+def get_metrics_path(gpu_type: str) -> str:
+    """Return a GPU-specific metrics filename so AMD and NVIDIA runs never overwrite each other."""
+    mapping = {
+        'nvidia':        'usecase_training_metrics_nvidia.json',
+        'nvidia_cuda':   'usecase_training_metrics_nvidia.json',
+        'amd_directml':  'usecase_training_metrics_amd.json',
+        'cpu':           'usecase_training_metrics_cpu.json',
+    }
+    return mapping.get(gpu_type, f'usecase_training_metrics_{gpu_type}.json')
+
 
 # ============================================================
-# Neuromorphic SNN Model
+# SNN Model
 # ============================================================
 
 class NeuromorphicActivitySNN(nn.Module):
-    """
-    Spiking Neural Network for activity suggestion
-    Uses Leaky Integrate-and-Fire (LIF) neurons with surrogate gradients
-    """
-    
-    def __init__(self, input_size=10, hidden_size=64, output_size=20, beta=0.9):
+    def __init__(self, input_size, hidden_size=64, output_size=10, beta=0.9, dropout=0.25):
         super().__init__()
-        
-        self.input_size = input_size
+
+        self.input_size  = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
-        
-        # Surrogate gradient for backpropagation through spikes
+
         spike_grad = surrogate.fast_sigmoid(slope=25)
-        
-        # Layers with surrogate gradients (manual hidden state management)
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.lif1 = snn.Leaky(beta=beta, spike_grad=spike_grad)
-        
-        self.fc2 = nn.Linear(hidden_size, output_size)
+
+        self.fc1     = nn.Linear(input_size, hidden_size)
+        self.lif1    = snn.Leaky(beta=beta, spike_grad=spike_grad)
+        self.drop    = nn.Dropout(p=dropout)
+
+        self.fc2  = nn.Linear(hidden_size, output_size)
         self.lif2 = snn.Leaky(beta=beta, spike_grad=spike_grad)
-    
+
     def forward(self, x, num_steps=20):
-        """
-        Forward pass through spiking network
-        
-        Args:
-            x: Input tensor (batch_size, input_size)
-            num_steps: Number of time steps for spiking
-            
-        Returns:
-            spk_out: Output spikes (num_steps, batch_size, output_size)
-            mem_out: Output membrane potential
-        """
-        batch_size = x.shape[0]
-        
-        # Initialize hidden states
         mem1 = self.lif1.init_leaky()
         mem2 = self.lif2.init_leaky()
-        
-        # Record output spikes
+
         spk_out_rec = []
-        
-        # Process through time
-        for step in range(num_steps):
-            # Input -> Hidden
+        for _ in range(num_steps):
             cur1 = self.fc1(x)
             spk1, mem1 = self.lif1(cur1, mem1)
-            
-            # Hidden -> Output
+            spk1 = self.drop(spk1)
             cur2 = self.fc2(spk1)
             spk2, mem2 = self.lif2(cur2, mem2)
-            
             spk_out_rec.append(spk2)
-        
-        # Stack spikes over time
-        spk_out = torch.stack(spk_out_rec)
-        
-        return spk_out, mem2
+
+        return torch.stack(spk_out_rec), mem2
 
 
 # ============================================================
-# GPU Monitoring
+# GPU Monitor (used during --train and --benchmark-gpu)
 # ============================================================
 
 class GPUMonitor:
-    """Monitor GPU/CPU metrics during training"""
-    
     def __init__(self):
-        self.gpu_type = self.detect_gpu()
-        self.device = self.get_device()
-        self.nvml = None
-        self.handle = None
-        
-        self.history = []
+        self.gpu_type   = self._detect_gpu()
+        self.device     = self._get_device()
+        self.nvml       = None
+        self.handle     = None
+        self.history    = []
         self.start_time = None
-        
+
         print("\n" + "="*70)
         print("GPU CONFIGURATION")
         print("="*70)
-        print(f"GPU Type: {self.gpu_type}")
-        print(f"Device: {self.device}")
+        print(f"  GPU Type: {self.gpu_type}")
+        print(f"  Device:   {self.device}")
         print("="*70)
-    
-    def detect_gpu(self):
-        """Detect available GPU (NVIDIA, AMD, or CPU)"""
-        
-        # Try PyTorch CUDA first (works even without NVML!)
+
+    def _detect_gpu(self):
         if torch.cuda.is_available():
-            gpu_name = torch.cuda.get_device_name(0)
-            print(f"✓ Detected GPU via PyTorch CUDA: {gpu_name}")
-            
-            # Try NVML for monitoring (optional)
+            print(f"CUDA GPU: {torch.cuda.get_device_name(0)}")
             if NVML_AVAILABLE:
                 try:
                     pynvml.nvmlInit()
-                    self.nvml = pynvml
+                    self.nvml   = pynvml
                     self.handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-                    print(f"✓ NVML monitoring: Enabled")
+                    print("NVML monitoring enabled")
                     return 'nvidia'
                 except Exception as e:
-                    print(f"⚠️  NVML monitoring: Disabled ({e})")
-                    print(f"   GPU will still be used via PyTorch CUDA!")
+                    print(f"NVML disabled ({e})")
                     return 'nvidia_cuda'
-            else:
-                print(f"⚠️  NVML not available - using PyTorch CUDA metrics")
-                return 'nvidia_cuda'
-        
-        # Try DirectML (AMD on Windows)
+            return 'nvidia_cuda'
+
         try:
             import torch_directml
             if torch_directml.is_available():
-                print(f"✓ Detected AMD GPU via DirectML")
-                print(f"   Device: {torch_directml.device()}")
+                print("AMD GPU via DirectML")
                 return 'amd_directml'
         except ImportError:
-            print(f"⚠️  DirectML not available (install: pip install torch-directml)")
-        except Exception as e:
-            print(f"⚠️  DirectML error: {e}")
-        
-        print("⚠ No GPU detected - using CPU only")
+            pass
+
+        print("No GPU found — falling back to CPU")
         return 'cpu'
-    
-    def get_device(self):
-        """Get PyTorch device"""
+
+    def _get_device(self):
         if self.gpu_type in ['nvidia', 'nvidia_cuda']:
             if torch.cuda.is_available():
                 return torch.device('cuda')
@@ -186,111 +159,67 @@ class GPUMonitor:
             except:
                 pass
         return torch.device('cpu')
-    
+
     def start_monitoring(self):
-        """Start monitoring"""
         self.start_time = time.time()
-        self.history = []
-    
-    def record_metrics(self, epoch, accuracy, loss):
-        """Record metrics for this epoch"""
+        self.history    = []
+
+    def record_metrics(self, epoch, accuracy, loss, val_accuracy=None, val_loss=None):
         current_time = time.time() - self.start_time
-        
         metrics = {
-            'epoch': epoch,
-            'accuracy': accuracy,
-            'loss': loss,
-            'time_seconds': current_time,
-            'timestamp': datetime.now().isoformat(),
+            'epoch':            epoch,
+            'train_accuracy':   accuracy,
+            'train_loss':       loss,
+            'val_accuracy':     val_accuracy,
+            'val_loss':         val_loss,
+            'time_seconds':     current_time,
+            'timestamp':        datetime.now().isoformat(),
+            'ram_mb':           0,
+            'gpu_allocated_mb': 0,
+            'gpu_reserved_mb':  0,
+            'power_watts':      0,
+            'energy_wh':        0,
+            'temperature_c':    0,
         }
-        
-        # RAM usage
+
         if PSUTIL_AVAILABLE:
-            process = psutil.Process()
-            metrics['ram_mb'] = process.memory_info().rss / (1024 * 1024)
-        else:
-            metrics['ram_mb'] = 0
-        
-        # GPU metrics
-        if self.gpu_type in ['nvidia', 'nvidia_cuda']:
-            if torch.cuda.is_available():
-                metrics['gpu_allocated_mb'] = torch.cuda.memory_allocated() / (1024 * 1024)
-                metrics['gpu_reserved_mb'] = torch.cuda.memory_reserved() / (1024 * 1024)
-            
-            # NVML power (if available)
-            if self.gpu_type == 'nvidia' and self.nvml and self.handle:
-                try:
-                    power_mw = self.nvml.nvmlDeviceGetPowerUsage(self.handle)
-                    metrics['power_watts'] = power_mw / 1000.0
-                except:
-                    metrics['power_watts'] = 115.0  # TDP estimate
-            else:
-                metrics['power_watts'] = 115.0  # TDP estimate
-        else:
-            metrics['gpu_allocated_mb'] = 0
-            metrics['gpu_reserved_mb'] = 0
-            metrics['power_watts'] = 0
-        
-        # Energy calculation
+            metrics['ram_mb'] = psutil.Process().memory_info().rss / (1024 * 1024)
+
+        if self.gpu_type in ['nvidia', 'nvidia_cuda'] and torch.cuda.is_available():
+            metrics['gpu_allocated_mb'] = torch.cuda.memory_allocated() / (1024 * 1024)
+            metrics['gpu_reserved_mb']  = torch.cuda.memory_reserved()  / (1024 * 1024)
+
+        if self.gpu_type == 'nvidia' and self.nvml and self.handle:
+            try:
+                metrics['power_watts'] = self.nvml.nvmlDeviceGetPowerUsage(self.handle) / 1000.0
+            except:
+                metrics['power_watts'] = 115.0
+        elif self.gpu_type == 'nvidia_cuda':
+            metrics['power_watts'] = 115.0
+
         if epoch > 1:
-            prev_time = self.history[-1]['time_seconds']
-            duration = current_time - prev_time
+            duration = current_time - self.history[-1]['time_seconds']
             metrics['energy_wh'] = metrics['power_watts'] * (duration / 3600.0)
-        else:
-            metrics['energy_wh'] = 0
-        
-        metrics['temperature_c'] = 0  # Will be filled by HWiNFO64 if available
-        
+
         self.history.append(metrics)
         return metrics
-    
+
     def get_summary(self):
-        """Get summary statistics"""
         if not self.history:
             return {}
-        
-        total_time = self.history[-1]['time_seconds']
-        final_accuracy = self.history[-1]['accuracy']
-        max_ram = max(h['ram_mb'] for h in self.history)
-        avg_power = sum(h['power_watts'] for h in self.history) / len(self.history)
-        total_energy = sum(h['energy_wh'] for h in self.history)
-        
-        max_gpu_allocated = 0
-        if self.gpu_type in ['nvidia', 'nvidia_cuda']:
-            max_gpu_allocated = max(h.get('gpu_allocated_mb', 0) for h in self.history)
-        
-        gpu_reserved = 0
-        if self.history and 'gpu_reserved_mb' in self.history[0]:
-            gpu_reserved = self.history[0]['gpu_reserved_mb']
-        
         return {
-            'final_accuracy': final_accuracy,
-            'max_ram_mb': max_ram,
-            'max_gpu_allocated_mb': max_gpu_allocated,
-            'average_power_watts': avg_power,
-            'total_energy_wh': total_energy,
-            'total_time_seconds': total_time,
-            'gpu_type': self.gpu_type,
+            'final_accuracy':       self.history[-1]['train_accuracy'],
+            'final_val_accuracy':   self.history[-1].get('val_accuracy', 0),
+            'final_val_loss':       self.history[-1].get('val_loss', 0),
+            'max_ram_mb':           max(h['ram_mb'] for h in self.history),
+            'max_gpu_allocated_mb': max(h.get('gpu_allocated_mb', 0) for h in self.history),
+            'average_power_watts':  sum(h['power_watts'] for h in self.history) / len(self.history),
+            'total_energy_wh':      sum(h['energy_wh']   for h in self.history),
+            'total_time_seconds':   self.history[-1]['time_seconds'],
+            'gpu_type':             self.gpu_type,
         }
-    
-    def save_metrics(self, filepath):
-        """Save metrics to JSON"""
-        summary = self.get_summary()
-        
-        data = {
-            'summary': summary,
-            'history': self.history,
-            'framework': 'snnTorch',
-            'neuromorphic': True,
-        }
-        
-        with open(filepath, 'w') as f:
-            json.dump(data, f, indent=2)
-        
-        print(f"\n✓ Metrics saved to: {filepath}")
-    
+
     def cleanup(self):
-        """Cleanup resources"""
         if self.nvml:
             try:
                 self.nvml.nvmlShutdown()
@@ -299,384 +228,670 @@ class GPUMonitor:
 
 
 # ============================================================
-# Inference Timing
+# Shared helpers
 # ============================================================
 
-def measure_inference_time(model, input_size, num_steps, num_tests=100, device='cpu'):
-    """Measure inference time"""
-    model.eval()
-    times = []
-    
-    with torch.no_grad():
-        # Warmup
-        x = torch.randn(1, input_size).to(device)
-        for _ in range(10):
-            model(x, num_steps=num_steps)
-        
-        # Measure
-        for _ in range(num_tests):
-            x = torch.randn(1, input_size).to(device)
-            start = time.time()
-            model(x, num_steps=num_steps)
-            end = time.time()
-            times.append((end - start) * 1000)  # Convert to ms
-    
-    return {
-        'num_tests': num_tests,
-        'average_ms': np.mean(times),
-        'minimum_ms': np.min(times),
-        'maximum_ms': np.max(times),
-        'std_dev_ms': np.std(times),
-        'p50_ms': np.percentile(times, 50),
-        'p95_ms': np.percentile(times, 95),
-        'p99_ms': np.percentile(times, 99),
-    }
+def load_model_from_disk():
+    """Load saved model. Exits with a clear message if not found."""
+    try:
+        checkpoint = torch.load(MODEL_PATH, map_location='cpu')
+    except FileNotFoundError:
+        print(f"\nModel file '{MODEL_PATH}' not found.")
+        print(f"Run  python train_usecase_snn.py --train  first.")
+        raise SystemExit(1)
+
+    model = NeuromorphicActivitySNN(
+        input_size=checkpoint['input_size'],
+        hidden_size=checkpoint['hidden_size'],
+        output_size=checkpoint['output_size'],
+        beta=0.9,
+    )
+    model.load_state_dict(checkpoint['model_state_dict'])
+
+    print(f"Loaded model from {MODEL_PATH}")
+    print(f"  Architecture:  {checkpoint['input_size']} → "
+          f"{checkpoint['hidden_size']} → {checkpoint['output_size']}")
+    print(f"  Best accuracy: {checkpoint.get('best_accuracy', 'N/A')}")
+
+    return model, checkpoint
 
 
-def add_inference_metrics(filepath, inference_metrics):
-    """Add inference metrics to existing JSON"""
-    with open(filepath, 'r') as f:
-        data = json.load(f)
-    
-    data['inference_timing'] = inference_metrics
-    data['summary']['avg_inference_ms'] = inference_metrics['average_ms']
-    data['summary']['p95_inference_ms'] = inference_metrics['p95_ms']
-    
-    with open(filepath, 'w') as f:
-        json.dump(data, f, indent=2)
+def update_metrics_file(key, data, metrics_path: str):
+    """Read metrics JSON, update one top-level key, write back."""
+    try:
+        with open(metrics_path, 'r') as f:
+            metrics = json.load(f)
+    except FileNotFoundError:
+        metrics = {}
+
+    metrics[key] = data
+
+    with open(metrics_path, 'w') as f:
+        json.dump(metrics, f, indent=2)
+
+    print(f" Saved '{key}' to {metrics_path}")
 
 
-# ============================================================
-# Train with Use Case Data
-# ============================================================
 
-def train_use_case_snn(num_samples=500, num_epochs=20, hidden_size=64,
-                       batch_size=32, lr=0.01):
-    """Train SNN on real use case scenarios"""
-    
+def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
+
     print("\n" + "="*70)
-    print("NEUROMORPHIC SNN - USE CASE TRAINING")
+    print("NEUROMORPHIC SNN — DRIVING ASSISTANT TRAINING")
     print("="*70)
-    print("\nFeatures:")
-    print("  ✓ Proactive suggestions (fills idle time)")
-    print("  ✓ Default preferences (learns from feedback)")
-    print("  ✓ Context-aware (time, energy, calendar)")
-    print("  ✓ Realistic use cases from requirements")
-    print()
-    
-    # Initialize GPU monitor
+
     monitor = GPUMonitor()
-    
-    # Generate training data
-    print(f"Generating {num_samples} use case scenarios...")
-    X_train, y_train, scenarios = generate_use_case_training_data(num_samples)
-    
-    # Convert to tensors
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    y_train = torch.tensor(y_train, dtype=torch.long)
 
-    print(f"✓ Generated {len(X_train)} training samples")
-    print(f"  Input features: {X_train.shape[1]}")
-    print(f"  Activity types: {len(ACTIVITY_LABELS)}")
+    print(f"\nLoading dataset from {DATASET_PATH}...")
+    df = pd.read_csv(DATASET_PATH)
+    print(f"  Loaded {len(df)} rows  |  {df['suggestion_name'].nunique()} classes")
 
-    # Class weights — inverse frequency to counter mode collapse
-    class_counts = torch.bincount(y_train, minlength=len(ACTIVITY_LABELS)).float()
+    # Encode categorical columns
+    cat_cols = ['time_of_day', 'event_category', 'scheduled_event',
+                'location', 'weather', 'last_media']
+    for col in cat_cols:
+        df[col] = LabelEncoder().fit_transform(df[col].astype(str))
+
+    # Features: everything except label columns
+    drop_cols = ['suggestion_name', 'suggestion_label']
+    feature_cols = [c for c in df.columns if c not in drop_cols]
+    X_all = df[feature_cols].values.astype(np.float32)
+    y_all = df['suggestion_label'].values.astype(np.int64)
+
+    suggestion_labels = sorted(df['suggestion_name'].unique())
+    num_classes       = len(suggestion_labels)
+
+    # 70-20-10 split
+    X_tr, X_te, y_tr, y_te = train_test_split(X_all, y_all, test_size=0.10, random_state=42, stratify=y_all)
+    X_tr, X_va, y_tr, y_va = train_test_split(X_tr,  y_tr,  test_size=0.222, random_state=42, stratify=y_tr)
+    print(f"  Split (70-20-10):  train={len(X_tr)}  val={len(X_va)}  test={len(X_te)}")
+
+    # Normalise features — fit on train only to avoid data leakage
+    scaler = StandardScaler()
+    X_tr = scaler.fit_transform(X_tr)
+    X_va = scaler.transform(X_va)
+    X_te = scaler.transform(X_te)
+
+    X_train = torch.tensor(X_tr, dtype=torch.float32)
+    y_train = torch.tensor(y_tr, dtype=torch.long)
+    X_val   = torch.tensor(X_va, dtype=torch.float32)
+    y_val   = torch.tensor(y_va, dtype=torch.long)
+    X_test  = torch.tensor(X_te, dtype=torch.float32)
+    y_test  = torch.tensor(y_te, dtype=torch.long)
+
+    print(f"  {len(X_train)} train samples  |  "
+          f"{X_train.shape[1]} features  |  "
+          f"{num_classes} suggestion classes")
+
+    class_counts  = torch.bincount(y_train, minlength=num_classes).float()
     class_weights = 1.0 / (class_counts + 1e-6)
-    class_weights = (class_weights / class_weights.sum() * len(ACTIVITY_LABELS)).to(monitor.device)
+    class_weights = (class_weights / class_weights.sum() * num_classes).to(monitor.device)
 
-    print("\n  Class distribution (top imbalances):")
-    sorted_idx = class_counts.argsort()
-    for i in sorted_idx[:3]:
-        print(f"    {ACTIVITY_LABELS[i]:30s} → {int(class_counts[i])} samples")
-    for i in sorted_idx[-3:]:
-        print(f"    {ACTIVITY_LABELS[i]:30s} → {int(class_counts[i])} samples")
+    train_dataset = TensorDataset(X_train, y_train)
+    loader        = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=False)
+    val_dataset   = TensorDataset(X_val, y_val)
+    val_loader    = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    # Mini-batch DataLoader with shuffle
-    dataset = TensorDataset(X_train, y_train)
-    loader  = DataLoader(dataset, batch_size=batch_size, shuffle=True, drop_last=False)
-    
-    # Show sample scenarios
-    print("\n" + "-"*70)
-    print("SAMPLE TRAINING SCENARIOS:")
-    print("-"*70)
-    for i in range(5):
-        s = scenarios[i]
-        day_name = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][s['day']]
-        print(f"\n{day_name} {s['hour']:02d}:{s['minute']:02d} | "
-              f"Energy: {s['energy']}/100 | "
-              f"Idle: {s['idle_minutes']}min")
-        print(f"  → {s['suggestion']}: {s['reason']}")
-    print("-"*70)
-    
-    # Create model
-    input_size = X_train.shape[1]
-    output_size = len(ACTIVITY_LABELS)
-    
-    print(f"\nCreating neuromorphic SNN...")
-    print(f"  Input: {input_size} features")
-    print(f"  Hidden: {hidden_size} LIF neurons")
-    print(f"  Output: {output_size} activity types")
-    
+    input_size  = X_train.shape[1]
+    output_size = num_classes
+
     model = NeuromorphicActivitySNN(
         input_size=input_size,
         hidden_size=hidden_size,
         output_size=output_size,
-        beta=0.9
+        beta=0.9,
     ).to(monitor.device)
-    
-    # Initialize weights
+
     with torch.no_grad():
         nn.init.xavier_uniform_(model.fc1.weight)
         nn.init.xavier_uniform_(model.fc2.weight)
-    
-    # Optimizer — higher lr, cosine annealing to reduce oscillation
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=num_epochs, eta_min=1e-4
     )
-    
-    # Training
+
     monitor.start_monitoring()
-    
-    print(f"\nTraining for {num_epochs} epochs (batch_size={batch_size}, lr={lr})...")
+    print(f"\nTraining {num_epochs} epochs...")
     print("="*70)
-    
-    best_accuracy = 0
-    best_model_state = None
+
+    best_accuracy      = 0
+    best_model_state   = None
+    early_stop_patience = 30
+    epochs_no_improve  = 0
 
     for epoch in range(num_epochs):
         model.train()
-        epoch_loss = 0.0
-        epoch_correct = 0
-        epoch_total = 0
+        epoch_loss = epoch_correct = epoch_total = 0
 
         for X_batch, y_batch in loader:
             X_batch = X_batch.to(monitor.device)
             y_batch = y_batch.to(monitor.device)
 
             optimizer.zero_grad()
-
-            # Forward pass
-            spk_out, mem_out = model(X_batch, num_steps=30)
-
-            # Class-weighted cross-entropy on spike counts
-            spike_counts = spk_out.sum(0)               # (batch, classes)
+            spk_out, _ = model(X_batch, num_steps=30)
+            spike_counts = spk_out.sum(0)
             loss = F.cross_entropy(spike_counts, y_batch, weight=class_weights)
-
             loss.backward()
             optimizer.step()
 
             with torch.no_grad():
-                _, predicted = spike_counts.max(1)
+                _, predicted  = spike_counts.max(1)
                 epoch_correct += (predicted == y_batch).sum().item()
                 epoch_total   += y_batch.size(0)
                 epoch_loss    += loss.item() * y_batch.size(0)
 
         scheduler.step()
 
-        accuracy  = (epoch_correct / epoch_total) * 100
-        avg_loss  = epoch_loss / epoch_total
+        accuracy = (epoch_correct / epoch_total) * 100
+        avg_loss = epoch_loss / epoch_total
 
-        if accuracy > best_accuracy:
-            best_accuracy    = accuracy
+        # --- validation pass ---
+        model.eval()
+        val_correct = val_total = 0
+        val_loss_sum = 0.0
+        with torch.no_grad():
+            for Xv, yv in val_loader:
+                Xv, yv = Xv.to(monitor.device), yv.to(monitor.device)
+                spk_v, _ = model(Xv, num_steps=30)
+                spike_counts_v = spk_v.sum(0)
+                v_loss = F.cross_entropy(spike_counts_v, yv, weight=class_weights)
+                _, pred_v = spike_counts_v.max(1)
+                val_correct  += (pred_v == yv).sum().item()
+                val_total    += yv.size(0)
+                val_loss_sum += v_loss.item() * yv.size(0)
+        val_accuracy = (val_correct / val_total) * 100
+        val_avg_loss = val_loss_sum / val_total
+
+        if val_accuracy > best_accuracy:
+            best_accuracy    = val_accuracy
             best_model_state = {k: v.clone() for k, v in model.state_dict().items()}
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
 
-        # Record metrics (pass avg loss and accuracy for this epoch)
-        metrics = monitor.record_metrics(epoch + 1, accuracy, avg_loss)
+        metrics = monitor.record_metrics(epoch + 1, accuracy, avg_loss, val_accuracy, val_avg_loss)
 
-        if (epoch + 1) % 5 == 0 or epoch == 0:
-            print(f"Epoch {epoch+1:3d}/{num_epochs}: "
-                  f"Loss={avg_loss:.4f}, "
-                  f"Acc={accuracy:5.1f}%, "
-                  f"Best={best_accuracy:5.1f}%, "
-                  f"LR={scheduler.get_last_lr()[0]:.5f}, "
-                  f"Time={metrics['time_seconds']:.1f}s")
-    
-    print("="*70)
+        if True:
+            print(f"Epoch {epoch+1:3d}/{num_epochs}  "
+                  f"loss={avg_loss:.4f}  train_acc={accuracy:5.1f}%  "
+                  f"val_acc={val_accuracy:5.1f}%  "
+                  f"best_val={best_accuracy:5.1f}%  "
+                  f"t={metrics['time_seconds']:.1f}s")
 
-    # Restore best weights before returning
-    if best_model_state is not None:
+    if best_model_state:
         model.load_state_dict(best_model_state)
-        print(f"\n  ✓ Best weights restored (accuracy: {best_accuracy:.1f}%)")
+        print(f"\n  Best val weights restored  (val_acc: {best_accuracy:.1f}%)")
 
-    # Summary
-    summary = monitor.get_summary()
-    print(f"\nTraining Summary:")
-    print(f"  Total time: {summary['total_time_seconds']:.1f} seconds")
-    print(f"  Best accuracy: {best_accuracy:.1f}%")
-    print(f"  Final accuracy: {summary['final_accuracy']:.1f}%")
-    print(f"  Average power: {summary['average_power_watts']:.1f} W")
-    print(f"  Total energy: {summary['total_energy_wh']:.4f} Wh")
-    
-    return model, monitor, best_accuracy
-
-
-# ============================================================
-# Test Proactive Suggestions
-# ============================================================
-
-def test_proactive_suggestions(model, device):
-    """Test model on realistic scenarios"""
-    
-    print("\n" + "="*70)
-    print("TESTING PROACTIVE SUGGESTIONS")
-    print("="*70)
-    
+    # --- test-set evaluation ---
     model.eval()
-    
-    test_scenarios = [
-        {
-            'name': 'Monday 7 AM - 30min free before work',
-            'features': [7/24, 0, 0/7, 0.8, 0.6, 30/180, 0, 0.5, 0.2, 0],
-            'expected': 'workout or morning_activity',
-        },
-        {
-            'name': 'Tuesday 12 PM - 1 hour lunch break',
-            'features': [12/24, 0, 1/7, 0.6, 0.5, 60/180, 0, 0.5, 0.2, 0],
-            'expected': 'lunch_break or light_activity',
-        },
-        {
-            'name': 'Wednesday 3 PM - 15min idle, low energy',
-            'features': [15/24, 0, 2/7, 0.3, 0.4, 15/180, 0, 0.5, 0.2, 0],
-            'expected': 'quick_rest or stretch_break',
-        },
-        {
-            'name': 'Friday 6 PM - 2 hours free evening',
-            'features': [18/24, 0, 4/7, 0.5, 0.4, 120/180, 0, 0.5, 0.2, 0],
-            'expected': 'relax or hobby_time',
-        },
-        {
-            'name': 'Saturday 9 AM - 3 hours free weekend',
-            'features': [9/24, 0, 5/7, 0.8, 0.7, 180/180, 0, 0.5, 0.2, 1],
-            'expected': 'hobby_time or productive_project',
-        },
-        {
-            'name': 'Monday 9 AM - meeting in 30min',
-            'features': [9/24, 0, 0/7, 0.7, 0.8, 0/180, 1, 0.5, 0.2, 0],
-            'expected': 'prepare_for_meeting',
-        },
-    ]
-    
+    test_correct = test_total = 0
+    test_loader  = DataLoader(TensorDataset(X_test, y_test), batch_size=batch_size)
     with torch.no_grad():
-        for scenario in test_scenarios:
-            x = torch.tensor([scenario['features']], dtype=torch.float32).to(device)
-            
-            # Get prediction
-            spk_out, mem_out = model(x, num_steps=30)
-            spike_counts = spk_out.sum(0)
-            _, predicted = spike_counts.max(1)
-            predicted_idx = predicted.item()
-            predicted_activity = ACTIVITY_LABELS[predicted_idx]
-            
-            # Get confidence (spike count)
-            confidence = spike_counts[0, predicted_idx].item()
-            
-            print(f"\n{scenario['name']}")
-            print(f"  Expected: {scenario['expected']}")
-            print(f"  Suggested: {predicted_activity}")
-            print(f"  Confidence: {confidence:.1f} spikes")
-    
-    print("\n" + "="*70)
+        for Xt, yt in test_loader:
+            Xt, yt = Xt.to(monitor.device), yt.to(monitor.device)
+            spk_t, _ = model(Xt, num_steps=30)
+            _, pred_t = spk_t.sum(0).max(1)
+            test_correct += (pred_t == yt).sum().item()
+            test_total   += yt.size(0)
+    test_accuracy = (test_correct / test_total) * 100
+    print(f"  Test-set accuracy: {test_accuracy:.1f}%")
 
+    # Inline 100-pass inference benchmark (matches train_usecase_dnn.py method)
+    single_x = X_test[:1].to(monitor.device)
+    latency_times = []
+    with torch.no_grad():
+        for _ in range(10):                         # warmup
+            model(single_x, num_steps=30)
+        for _ in range(100):
+            t0 = time.time()
+            model(single_x, num_steps=30)
+            latency_times.append((time.time() - t0) * 1000)
+    avg_inference_ms = float(np.mean(latency_times))
+    p95_inference_ms = float(np.percentile(latency_times, 95))
+    print(f"  Avg inference:     {avg_inference_ms:.3f} ms")
+    print(f"  p95 inference:     {p95_inference_ms:.3f} ms")
 
-# ============================================================
-# Save Model with Defaults
-# ============================================================
-
-def save_use_case_model(model, best_accuracy, filepath='minios_usecase_model.pth'):
-    """Save model with use case metadata"""
-    
-    # Create default user profile
-    default_profile = UserProfile()
-    
+    # Save model
     torch.save({
-        'model_state_dict': model.state_dict(),
-        'input_size': model.input_size,
-        'hidden_size': model.hidden_size,
-        'output_size': model.output_size,
-        'activity_labels': ACTIVITY_LABELS,
-        'use_cases': USE_CASES,
-        'default_preferences': default_profile.preferences,
-        'best_accuracy': best_accuracy,
-        'proactive': True,
-        'fills_idle_time': True,
-    }, filepath)
-    
-    print(f"\n✓ Model saved to: {filepath}")
-    print(f"  Includes default preferences")
-    print(f"  Includes use case metadata")
-    print(f"  Best accuracy: {best_accuracy:.1f}%")
+        'model_state_dict':    model.state_dict(),
+        'input_size':          model.input_size,
+        'hidden_size':         model.hidden_size,
+        'output_size':         model.output_size,
+        'suggestion_labels':   suggestion_labels,
+        'dataset_path':        DATASET_PATH,
+        'best_val_accuracy':   best_accuracy,
+        'test_accuracy':       test_accuracy,
+        'split_mode':          '70-20-10',
+        'num_samples':         len(df),
+    }, MODEL_PATH)
+    print(f"  Model saved to {MODEL_PATH}")
+
+    # Save training metrics to GPU-specific file
+    metrics_path = get_metrics_path(monitor.gpu_type)
+    summary = monitor.get_summary()
+    summary['test_accuracy']     = test_accuracy
+    summary['dataset_path']      = DATASET_PATH
+    summary['model_type']        = 'snn'
+    summary['avg_inference_ms']  = avg_inference_ms
+    summary['p95_inference_ms']  = p95_inference_ms
+    update_metrics_file('summary', summary, metrics_path)
+    update_metrics_file('history', monitor.history, metrics_path)
+
+    monitor.cleanup()
+
+    print("\n" + "="*70)
+    print("  TRAINING COMPLETE")
+    print("="*70)
+    print(f"  Best val accuracy : {best_accuracy:.1f}%")
+    print(f"  Test accuracy     : {test_accuracy:.1f}%")
+    print(f"  Avg inference     : {avg_inference_ms:.3f} ms")
+    print(f"\nNext:")
+    print(f"  python train_usecase_snn.py --benchmark-gpu")
+    print(f"  python train_usecase_snn.py --loihi")
 
 
 # ============================================================
-# Main Training Pipeline
+# --benchmark-gpu
 # ============================================================
+
+def run_benchmark_gpu(num_tests=100, num_steps=30):
+
+    print("\n" + "="*70)
+    print("GPU INFERENCE ENERGY BENCHMARK")
+    print("="*70)
+
+    model, _ = load_model_from_disk()
+    monitor  = GPUMonitor()
+    model    = model.to(monitor.device)
+    model.eval()
+
+    # Warmup
+    print("\nWarming up...")
+    with torch.no_grad():
+        x = torch.randn(1, model.input_size).to(monitor.device)
+        for _ in range(10):
+            model(x, num_steps=num_steps)
+
+    # Benchmark
+    print(f"Running {num_tests} inference passes on {monitor.gpu_type}...")
+    times = []
+    with torch.no_grad():
+        for _ in range(num_tests):
+            x     = torch.randn(1, model.input_size).to(monitor.device)
+            start = time.time()
+            model(x, num_steps=num_steps)
+            times.append((time.time() - start) * 1000)
+
+    avg_ms = float(np.mean(times))
+    p95_ms = float(np.percentile(times, 95))
+
+    # Power — NVML if available, else AMD measured baseline
+    summary      = monitor.get_summary()
+    gpu_power_w  = summary.get('average_power_watts', 0.0)
+    power_source = 'nvml_measured'
+    if gpu_power_w < 1.0:
+        gpu_power_w  = 24.5   # your AMD DirectML measured baseline
+        power_source = 'amd_measured_baseline'
+
+    energy_per_inference_uJ = gpu_power_w * (avg_ms / 1000.0) * 1e6
+    daily_energy_wh         = energy_per_inference_uJ * 86400 / 3.6e9
+
+    result = {
+        'device':                   str(monitor.device),
+        'gpu_type':                 monitor.gpu_type,
+        'num_tests':                num_tests,
+        'num_steps':                num_steps,
+        'average_ms':               avg_ms,
+        'p95_ms':                   p95_ms,
+        'power_w':                  gpu_power_w,
+        'power_source':             power_source,
+        'energy_per_inference_uJ':  energy_per_inference_uJ,
+        'daily_energy_wh':          daily_energy_wh,
+        'inferences_per_day':       86400,
+        'timestamp':                datetime.now().isoformat(),
+    }
+
+    print("\n" + "="*70)
+    print("RESULTS — GPU")
+    print("="*70)
+    print(f"  Device:              {monitor.gpu_type}")
+    print(f"  Avg latency:         {avg_ms:.2f} ms")
+    print(f"  p95 latency:         {p95_ms:.2f} ms")
+    print(f"  Power draw:          {gpu_power_w:.1f} W  ({power_source})")
+    print(f"  Energy/inference:    {energy_per_inference_uJ:.2f} µJ")
+    print(f"  Daily energy (24/7): {daily_energy_wh:.4f} Wh")
+    print("="*70)
+
+    update_metrics_file('gpu_benchmark', result, get_metrics_path(monitor.gpu_type))
+    monitor.cleanup()
+
+    print(f"\nNext: python train_usecase_snn.py --loihi")
+
+
+# ============================================================
+# --loihi
+# ============================================================
+
+def run_loihi_estimate(num_steps=30, avg_spike_rate=0.1):
+
+    print("\n" + "="*70)
+    print("LOIHI 2 ENERGY ESTIMATE")
+    print("="*70)
+
+    model, _ = load_model_from_disk()
+
+    input_size  = model.input_size
+    hidden_size = model.hidden_size
+    output_size = model.output_size
+
+    synapses_l1 = input_size  * hidden_size
+    synapses_l2 = hidden_size * output_size
+
+    # SOPs fire only when a pre-synaptic neuron spikes
+    sops_l1    = avg_spike_rate * synapses_l1 * num_steps
+    sops_l2    = avg_spike_rate * synapses_l2 * num_steps
+    total_sops = sops_l1 + sops_l2
+
+    ENERGY_PER_SOP_PJ = 3.0    # Intel Loihi 2 published figure (pJ per SOP)
+    # Core static power for a small network on a single neurocore.
+    # Full chip idle is ~30 mW but that is spread across 128 neurocores.
+    # This model fits on ~1 neurocore, so static ≈ 30 mW / 128 ≈ 0.23 mW.
+    # We use 0.001 W (1 mW) as a conservative single-core estimate.
+    CORE_STATIC_W = 0.001  # 1 mW — single neurocore static power
+
+    dynamic_energy_pJ = total_sops * ENERGY_PER_SOP_PJ
+    dynamic_energy_uJ = dynamic_energy_pJ / 1e6  # pJ → µJ
+
+    # Loihi runs ~1 ms per timestep
+    # Static energy (µJ) = W × s × 1e6
+    estimated_latency_ms = float(num_steps) * 1.0
+    estimated_latency_s  = estimated_latency_ms / 1000.0
+    static_energy_uJ     = CORE_STATIC_W * estimated_latency_s * 1e6
+
+    total_energy_uJ = dynamic_energy_uJ + static_energy_uJ
+    daily_energy_wh = total_energy_uJ * 86400 / 3.6e9
+
+    result = {
+        'device':                   'loihi2_estimated',
+        'energy_per_sop_pJ':        ENERGY_PER_SOP_PJ,
+        'core_static_power_w':      CORE_STATIC_W,
+        'num_steps':                num_steps,
+        'avg_spike_rate':           avg_spike_rate,
+        'synapses_layer1':          synapses_l1,
+        'synapses_layer2':          synapses_l2,
+        'total_sops_per_inference': int(total_sops),
+        'dynamic_energy_uJ':        dynamic_energy_uJ,
+        'static_energy_uJ':         static_energy_uJ,
+        'total_energy_uJ':          total_energy_uJ,
+        'estimated_latency_ms':     estimated_latency_ms,
+        'daily_energy_wh':          daily_energy_wh,
+        'inferences_per_day':       86400,
+        'timestamp':                datetime.now().isoformat(),
+        'note': (
+            f"Based on Intel Loihi 2 published 3 pJ/SOP. "
+            f"Assumes {avg_spike_rate*100:.0f}% spike rate (sparse SNN). "
+            f"Dynamic energy scales down further with sparser activity."
+        ),
+    }
+
+    print("\n" + "="*70)
+    print("RESULTS — LOIHI 2 (estimated)")
+    print("="*70)
+    print(f"  Model:               {input_size} → {hidden_size} → {output_size}")
+    print(f"  Timesteps:           {num_steps}")
+    print(f"  Avg spike rate:      {avg_spike_rate*100:.0f}%")
+    print(f"  Total SOPs/inf:      {int(total_sops):,}")
+    print(f"  Dynamic energy:      {dynamic_energy_uJ:.6f} µJ")
+    print(f"  Static energy:       {static_energy_uJ:.6f} µJ")
+    print(f"  Total energy/inf:    {total_energy_uJ:.6f} µJ")
+    print(f"  Est. latency:        {estimated_latency_ms:.1f} ms")
+    print(f"  Daily energy (24/7): {daily_energy_wh:.8f} Wh")
+    print("="*70)
+    print(f"  Note: {result['note']}")
+    print("="*70)
+
+    # Detect GPU type so we read/write the right metrics file
+    metrics_path = get_metrics_path(_detect_gpu_type())
+
+    # If GPU benchmark already exists, print savings immediately
+    try:
+        with open(metrics_path, 'r') as f:
+            metrics = json.load(f)
+        gpu = metrics.get('gpu_benchmark')
+        if gpu:
+            gpu_uJ    = gpu['energy_per_inference_uJ']
+            savings_x = gpu_uJ / max(total_energy_uJ, 1e-9)
+            gpu_daily = gpu['daily_energy_wh']
+            print(f"\n  vs GPU ({gpu['gpu_type']}):")
+            print(f"    Energy savings:      {savings_x:.0f}× less per inference")
+            print(f"    Daily Wh saved:      {gpu_daily - daily_energy_wh:.4f} Wh")
+            print("="*70)
+    except (FileNotFoundError, KeyError):
+        print(f"\n  Tip: run --benchmark-gpu first to see GPU vs Loihi savings.")
+
+    update_metrics_file('loihi_estimate', result, metrics_path)
+
+
+# ============================================================
+# --ops-estimate
+# ============================================================
+
+def run_ops_estimate(num_steps=30):
+    """
+    Run all 5,000 dataset samples through the trained SNN and measure:
+      - Actual spike rate per layer (replaces the assumed 10% in --loihi)
+      - Real SOPs per inference (spike_rate × synapses × num_steps)
+      - Per-class spike rate breakdown (shows input-dependent compute)
+      - Loihi 2 energy estimate using measured (not assumed) spike rate
+      - Total and per-sample inference time over the full dataset
+    """
+    print("\n" + "="*70)
+    print("SNN OPS ESTIMATE — FULL DATASET")
+    print("="*70)
+
+    model, checkpoint = load_model_from_disk()
+    model.eval()
+
+    # ── Load and encode full dataset (same pipeline as --train) ──────────
+    print(f"\nLoading dataset from {DATASET_PATH}...")
+    df = pd.read_csv(DATASET_PATH)
+    cat_cols = ['time_of_day', 'event_category', 'scheduled_event',
+                'location', 'weather', 'last_media']
+    for col in cat_cols:
+        df[col] = LabelEncoder().fit_transform(df[col].astype(str))
+
+    drop_cols    = ['suggestion_name', 'suggestion_label']
+    feature_cols = [c for c in df.columns if c not in drop_cols]
+    X_all        = torch.tensor(df[feature_cols].values, dtype=torch.float32)
+    y_all        = df['suggestion_label'].values
+    labels       = sorted(df['suggestion_name'].unique())
+    num_samples  = len(X_all)
+    print(f"  {num_samples} samples  |  {len(feature_cols)} features  |  {len(labels)} classes")
+
+    input_size  = model.input_size
+    hidden_size = model.hidden_size
+    output_size = model.output_size
+    synapses_l1 = input_size  * hidden_size   # 20 × 64  = 1,280
+    synapses_l2 = hidden_size * output_size   # 64 × 23  = 1,472
+    total_synapses = synapses_l1 + synapses_l2
+
+    # ── Per-sample spike counting ─────────────────────────────────────────
+    spikes_l1_per_sample = []   # fraction of hidden neurons that fired
+    spikes_l2_per_sample = []   # fraction of output neurons that fired
+    latencies_ms         = []
+    per_class_spikes     = {label: [] for label in labels}
+
+    print(f"\nRunning {num_samples} inference passes (num_steps={num_steps})...")
+
+    with torch.no_grad():
+        for i in range(num_samples):
+            x = X_all[i].unsqueeze(0)   # shape (1, input_size)
+
+            t0 = time.time()
+
+            # Forward pass — capture intermediate spikes
+            mem1 = model.lif1.init_leaky()
+            mem2 = model.lif2.init_leaky()
+            l1_spike_total = torch.zeros(hidden_size)
+            l2_spike_total = torch.zeros(output_size)
+
+            for _ in range(num_steps):
+                cur1       = model.fc1(x)
+                spk1, mem1 = model.lif1(cur1, mem1)
+                cur2       = model.fc2(spk1)
+                spk2, mem2 = model.lif2(cur2, mem2)
+                l1_spike_total += spk1.squeeze(0)
+                l2_spike_total += spk2.squeeze(0)
+
+            latencies_ms.append((time.time() - t0) * 1000)
+
+            # Spike rate = spikes fired / (neurons × timesteps)
+            rate_l1 = l1_spike_total.sum().item() / (hidden_size * num_steps)
+            rate_l2 = l2_spike_total.sum().item() / (output_size * num_steps)
+            spikes_l1_per_sample.append(rate_l1)
+            spikes_l2_per_sample.append(rate_l2)
+
+            # Track per class
+            class_name = labels[y_all[i]]
+            per_class_spikes[class_name].append((rate_l1 + rate_l2) / 2)
+
+    # ── Aggregate results ─────────────────────────────────────────────────
+    avg_rate_l1   = float(np.mean(spikes_l1_per_sample))
+    avg_rate_l2   = float(np.mean(spikes_l2_per_sample))
+    overall_rate  = (avg_rate_l1 + avg_rate_l2) / 2
+
+    # Real SOPs using measured spike rate
+    sops_l1 = avg_rate_l1 * synapses_l1 * num_steps
+    sops_l2 = avg_rate_l2 * synapses_l2 * num_steps
+    total_sops = sops_l1 + sops_l2
+
+    avg_latency_ms   = float(np.mean(latencies_ms))
+    total_latency_ms = float(np.sum(latencies_ms))
+
+    # Loihi energy with measured spike rate
+    ENERGY_PER_SOP_PJ = 3.0
+    CORE_STATIC_W     = 0.001
+    dynamic_energy_uJ = (total_sops * ENERGY_PER_SOP_PJ) / 1e6
+    static_energy_uJ  = CORE_STATIC_W * (num_steps * 0.001) * 1e6
+    total_energy_uJ   = dynamic_energy_uJ + static_energy_uJ
+    daily_energy_wh   = total_energy_uJ * 86400 / 3.6e9
+
+    # Per-class spike rate summary
+    class_rates = {
+        cls: float(np.mean(rates)) if rates else 0.0
+        for cls, rates in per_class_spikes.items()
+    }
+    class_rates_sorted = sorted(class_rates.items(), key=lambda x: x[1])
+
+    print("\n" + "="*70)
+    print("RESULTS — SNN OPS ESTIMATE")
+    print("="*70)
+    print(f"  Architecture:           {input_size} → {hidden_size} → {output_size}")
+    print(f"  Timesteps:              {num_steps}")
+    print(f"  Samples measured:       {num_samples:,}")
+    print()
+    print(f"  SPIKE RATES (measured from data):")
+    print(f"    Layer 1 (hidden):     {avg_rate_l1*100:.2f}%")
+    print(f"    Layer 2 (output):     {avg_rate_l2*100:.2f}%")
+    print(f"    Overall avg:          {overall_rate*100:.2f}%")
+    print()
+    print(f"  OPS PER INFERENCE (real SOPs):")
+    print(f"    Layer 1:              {sops_l1:,.1f} SOPs")
+    print(f"    Layer 2:              {sops_l2:,.1f} SOPs")
+    print(f"    Total:                {total_sops:,.1f} SOPs")
+    print()
+    print(f"  LOIHI 2 ENERGY (measured spike rate):")
+    print(f"    Dynamic energy:       {dynamic_energy_uJ:.6f} µJ")
+    print(f"    Static energy:        {static_energy_uJ:.6f} µJ")
+    print(f"    Total per inference:  {total_energy_uJ:.6f} µJ")
+    print(f"    Daily (24/7):         {daily_energy_wh:.8f} Wh")
+    print()
+    print(f"  INFERENCE LATENCY (GPU/CPU, all {num_samples:,} samples):")
+    print(f"    Avg per sample:       {avg_latency_ms:.3f} ms")
+    print(f"    Total dataset:        {total_latency_ms:.1f} ms")
+    print()
+    print(f"  SPIKE RATE BY CLASS (input-dependent compute):")
+    print(f"    {'Class':<35} Spike Rate")
+    print(f"    {'-'*50}")
+    for cls, rate in class_rates_sorted:
+        bar = '█' * int(rate * 40)
+        print(f"    {cls:<35} {rate*100:5.2f}%  {bar}")
+    print("="*70)
+    print(f"  NOTE: SOPs use measured spike rate ({overall_rate*100:.1f}%), not assumed 10%.")
+    print(f"        Loihi 2 energy based on Intel published 3 pJ/SOP figure.")
+
+    result = {
+        'model_type':             'snn',
+        'num_samples':            num_samples,
+        'num_steps':              num_steps,
+        'architecture':           f"{input_size}→{hidden_size}→{output_size}",
+        'synapses_l1':            synapses_l1,
+        'synapses_l2':            synapses_l2,
+        'total_synapses':         total_synapses,
+        'measured_spike_rate_l1': avg_rate_l1,
+        'measured_spike_rate_l2': avg_rate_l2,
+        'measured_spike_rate_overall': overall_rate,
+        'sops_l1':                sops_l1,
+        'sops_l2':                sops_l2,
+        'total_sops':             total_sops,
+        'loihi_dynamic_uJ':       dynamic_energy_uJ,
+        'loihi_static_uJ':        static_energy_uJ,
+        'loihi_total_uJ':         total_energy_uJ,
+        'loihi_daily_wh':         daily_energy_wh,
+        'avg_latency_ms':         avg_latency_ms,
+        'total_latency_ms':       total_latency_ms,
+        'per_class_spike_rates':  class_rates,
+        'timestamp':              datetime.now().isoformat(),
+    }
+
+    metrics_path = get_metrics_path(_detect_gpu_type())
+    update_metrics_file('ops_estimate', result, metrics_path)
+
+
+# ============================================================
+# Argparse entry point
+# ============================================================
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="MiniOS Neuromorphic SNN — train, benchmark GPU, or estimate Loihi energy"
+    )
+
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        '--train',
+        action='store_true',
+        help='Train the SNN and save model to minios_usecase_model.pth',
+    )
+    group.add_argument(
+        '--benchmark-gpu',
+        action='store_true',
+        dest='benchmark_gpu',
+        help='Measure real GPU inference energy (requires saved model)',
+    )
+    group.add_argument(
+        '--loihi',
+        action='store_true',
+        help='Estimate Loihi 2 inference energy from model architecture (requires saved model)',
+    )
+    group.add_argument(
+        '--ops-estimate',
+        action='store_true',
+        dest='ops_estimate',
+        help='Measure real SOPs and spike rates across full dataset (requires saved model)',
+    )
+
+    args = parser.parse_args()
+
+    if args.train:
+        run_train()
+    elif args.benchmark_gpu:
+        run_benchmark_gpu()
+    elif args.loihi:
+        run_loihi_estimate()
+    elif args.ops_estimate:
+        run_ops_estimate()
+
 
 if __name__ == "__main__":
-    print("\n" + "="*70)
-    print("USE CASE SNN TRAINING")
-    print("Proactive + Learning + Context-Aware")
-    print("="*70)
-    
-    # Train model
-    model, monitor, best_accuracy = train_use_case_snn(
-        num_samples=500,
-        num_epochs=20,
-        hidden_size=64,
-        batch_size=32,
-        lr=0.01,
-    )
-    
-    # Save metrics
-    monitor.save_metrics('usecase_training_metrics.json')
-    
-    # Add use case metadata
-    with open('usecase_training_metrics.json', 'r') as f:
-        data = json.load(f)
-    
-    data['use_cases'] = {
-        'proactive': True,
-        'fills_idle_time': True,
-        'context_aware': True,
-        'learns_preferences': True,
-        'num_activities': len(ACTIVITY_LABELS),
-        'activities': ACTIVITY_LABELS,
-    }
-    
-    with open('usecase_training_metrics.json', 'w') as f:
-        json.dump(data, f, indent=2)
-    
-    # Test proactive suggestions
-    test_proactive_suggestions(model, monitor.device)
-    
-    # Measure inference time
-    inference_metrics = measure_inference_time(
-        model,
-        input_size=10,
-        num_steps=30,
-        num_tests=100,
-        device=monitor.device
-    )
-    
-    add_inference_metrics('usecase_training_metrics.json', inference_metrics)
-    
-    # Save model
-    save_use_case_model(model, best_accuracy)
-    
-    # Cleanup
-    monitor.cleanup()
-    
-    print("\n" + "="*70)
-    print("✓ USE CASE TRAINING COMPLETE!")
-    print("="*70)
-    print(f"\nFiles created:")
-    print(f"  - usecase_training_metrics.json")
-    print(f"  - minios_usecase_model.pth")
-    print(f"\nModel features:")
-    print(f"  ✓ Proactive suggestions")
-    print(f"  ✓ Fills idle time automatically")
-    print(f"  ✓ Default preferences included")
-    print(f"  ✓ Context-aware (time, energy, calendar)")
-    print(f"  ✓ Ready for feedback learning")
-    print(f"\nNext: python export_usecase_to_minios.py")
-    print()
+    main()
