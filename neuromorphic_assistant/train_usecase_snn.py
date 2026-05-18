@@ -436,6 +436,21 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
     test_accuracy = (test_correct / test_total) * 100
     print(f"  Test-set accuracy: {test_accuracy:.1f}%")
 
+    # Inline 100-pass inference benchmark (matches train_usecase_dnn.py method)
+    single_x = X_test[:1].to(monitor.device)
+    latency_times = []
+    with torch.no_grad():
+        for _ in range(10):                         # warmup
+            model(single_x, num_steps=30)
+        for _ in range(100):
+            t0 = time.time()
+            model(single_x, num_steps=30)
+            latency_times.append((time.time() - t0) * 1000)
+    avg_inference_ms = float(np.mean(latency_times))
+    p95_inference_ms = float(np.percentile(latency_times, 95))
+    print(f"  Avg inference:     {avg_inference_ms:.3f} ms")
+    print(f"  p95 inference:     {p95_inference_ms:.3f} ms")
+
     # Save model
     torch.save({
         'model_state_dict':    model.state_dict(),
@@ -454,8 +469,11 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
     # Save training metrics to GPU-specific file
     metrics_path = get_metrics_path(monitor.gpu_type)
     summary = monitor.get_summary()
-    summary['test_accuracy'] = test_accuracy
-    summary['dataset_path']  = DATASET_PATH
+    summary['test_accuracy']     = test_accuracy
+    summary['dataset_path']      = DATASET_PATH
+    summary['model_type']        = 'snn'
+    summary['avg_inference_ms']  = avg_inference_ms
+    summary['p95_inference_ms']  = p95_inference_ms
     update_metrics_file('summary', summary, metrics_path)
     update_metrics_file('history', monitor.history, metrics_path)
 
@@ -466,6 +484,7 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
     print("="*70)
     print(f"  Best val accuracy : {best_accuracy:.1f}%")
     print(f"  Test accuracy     : {test_accuracy:.1f}%")
+    print(f"  Avg inference     : {avg_inference_ms:.3f} ms")
     print(f"\nNext:")
     print(f"  python train_usecase_snn.py --benchmark-gpu")
     print(f"  python train_usecase_snn.py --loihi")
@@ -654,6 +673,182 @@ def run_loihi_estimate(num_steps=30, avg_spike_rate=0.1):
 
 
 # ============================================================
+# --ops-estimate
+# ============================================================
+
+def run_ops_estimate(num_steps=30):
+    """
+    Run all 5,000 dataset samples through the trained SNN and measure:
+      - Actual spike rate per layer (replaces the assumed 10% in --loihi)
+      - Real SOPs per inference (spike_rate × synapses × num_steps)
+      - Per-class spike rate breakdown (shows input-dependent compute)
+      - Loihi 2 energy estimate using measured (not assumed) spike rate
+      - Total and per-sample inference time over the full dataset
+    """
+    print("\n" + "="*70)
+    print("SNN OPS ESTIMATE — FULL DATASET")
+    print("="*70)
+
+    model, checkpoint = load_model_from_disk()
+    model.eval()
+
+    # ── Load and encode full dataset (same pipeline as --train) ──────────
+    print(f"\nLoading dataset from {DATASET_PATH}...")
+    df = pd.read_csv(DATASET_PATH)
+    cat_cols = ['time_of_day', 'event_category', 'scheduled_event',
+                'location', 'weather', 'last_media']
+    for col in cat_cols:
+        df[col] = LabelEncoder().fit_transform(df[col].astype(str))
+
+    drop_cols    = ['suggestion_name', 'suggestion_label']
+    feature_cols = [c for c in df.columns if c not in drop_cols]
+    X_all        = torch.tensor(df[feature_cols].values, dtype=torch.float32)
+    y_all        = df['suggestion_label'].values
+    labels       = sorted(df['suggestion_name'].unique())
+    num_samples  = len(X_all)
+    print(f"  {num_samples} samples  |  {len(feature_cols)} features  |  {len(labels)} classes")
+
+    input_size  = model.input_size
+    hidden_size = model.hidden_size
+    output_size = model.output_size
+    synapses_l1 = input_size  * hidden_size   # 20 × 64  = 1,280
+    synapses_l2 = hidden_size * output_size   # 64 × 23  = 1,472
+    total_synapses = synapses_l1 + synapses_l2
+
+    # ── Per-sample spike counting ─────────────────────────────────────────
+    spikes_l1_per_sample = []   # fraction of hidden neurons that fired
+    spikes_l2_per_sample = []   # fraction of output neurons that fired
+    latencies_ms         = []
+    per_class_spikes     = {label: [] for label in labels}
+
+    print(f"\nRunning {num_samples} inference passes (num_steps={num_steps})...")
+
+    with torch.no_grad():
+        for i in range(num_samples):
+            x = X_all[i].unsqueeze(0)   # shape (1, input_size)
+
+            t0 = time.time()
+
+            # Forward pass — capture intermediate spikes
+            mem1 = model.lif1.init_leaky()
+            mem2 = model.lif2.init_leaky()
+            l1_spike_total = torch.zeros(hidden_size)
+            l2_spike_total = torch.zeros(output_size)
+
+            for _ in range(num_steps):
+                cur1       = model.fc1(x)
+                spk1, mem1 = model.lif1(cur1, mem1)
+                cur2       = model.fc2(spk1)
+                spk2, mem2 = model.lif2(cur2, mem2)
+                l1_spike_total += spk1.squeeze(0)
+                l2_spike_total += spk2.squeeze(0)
+
+            latencies_ms.append((time.time() - t0) * 1000)
+
+            # Spike rate = spikes fired / (neurons × timesteps)
+            rate_l1 = l1_spike_total.sum().item() / (hidden_size * num_steps)
+            rate_l2 = l2_spike_total.sum().item() / (output_size * num_steps)
+            spikes_l1_per_sample.append(rate_l1)
+            spikes_l2_per_sample.append(rate_l2)
+
+            # Track per class
+            class_name = labels[y_all[i]]
+            per_class_spikes[class_name].append((rate_l1 + rate_l2) / 2)
+
+    # ── Aggregate results ─────────────────────────────────────────────────
+    avg_rate_l1   = float(np.mean(spikes_l1_per_sample))
+    avg_rate_l2   = float(np.mean(spikes_l2_per_sample))
+    overall_rate  = (avg_rate_l1 + avg_rate_l2) / 2
+
+    # Real SOPs using measured spike rate
+    sops_l1 = avg_rate_l1 * synapses_l1 * num_steps
+    sops_l2 = avg_rate_l2 * synapses_l2 * num_steps
+    total_sops = sops_l1 + sops_l2
+
+    avg_latency_ms   = float(np.mean(latencies_ms))
+    total_latency_ms = float(np.sum(latencies_ms))
+
+    # Loihi energy with measured spike rate
+    ENERGY_PER_SOP_PJ = 3.0
+    CORE_STATIC_W     = 0.001
+    dynamic_energy_uJ = (total_sops * ENERGY_PER_SOP_PJ) / 1e6
+    static_energy_uJ  = CORE_STATIC_W * (num_steps * 0.001) * 1e6
+    total_energy_uJ   = dynamic_energy_uJ + static_energy_uJ
+    daily_energy_wh   = total_energy_uJ * 86400 / 3.6e9
+
+    # Per-class spike rate summary
+    class_rates = {
+        cls: float(np.mean(rates)) if rates else 0.0
+        for cls, rates in per_class_spikes.items()
+    }
+    class_rates_sorted = sorted(class_rates.items(), key=lambda x: x[1])
+
+    print("\n" + "="*70)
+    print("RESULTS — SNN OPS ESTIMATE")
+    print("="*70)
+    print(f"  Architecture:           {input_size} → {hidden_size} → {output_size}")
+    print(f"  Timesteps:              {num_steps}")
+    print(f"  Samples measured:       {num_samples:,}")
+    print()
+    print(f"  SPIKE RATES (measured from data):")
+    print(f"    Layer 1 (hidden):     {avg_rate_l1*100:.2f}%")
+    print(f"    Layer 2 (output):     {avg_rate_l2*100:.2f}%")
+    print(f"    Overall avg:          {overall_rate*100:.2f}%")
+    print()
+    print(f"  OPS PER INFERENCE (real SOPs):")
+    print(f"    Layer 1:              {sops_l1:,.1f} SOPs")
+    print(f"    Layer 2:              {sops_l2:,.1f} SOPs")
+    print(f"    Total:                {total_sops:,.1f} SOPs")
+    print()
+    print(f"  LOIHI 2 ENERGY (measured spike rate):")
+    print(f"    Dynamic energy:       {dynamic_energy_uJ:.6f} µJ")
+    print(f"    Static energy:        {static_energy_uJ:.6f} µJ")
+    print(f"    Total per inference:  {total_energy_uJ:.6f} µJ")
+    print(f"    Daily (24/7):         {daily_energy_wh:.8f} Wh")
+    print()
+    print(f"  INFERENCE LATENCY (GPU/CPU, all {num_samples:,} samples):")
+    print(f"    Avg per sample:       {avg_latency_ms:.3f} ms")
+    print(f"    Total dataset:        {total_latency_ms:.1f} ms")
+    print()
+    print(f"  SPIKE RATE BY CLASS (input-dependent compute):")
+    print(f"    {'Class':<35} Spike Rate")
+    print(f"    {'-'*50}")
+    for cls, rate in class_rates_sorted:
+        bar = '█' * int(rate * 40)
+        print(f"    {cls:<35} {rate*100:5.2f}%  {bar}")
+    print("="*70)
+    print(f"  NOTE: SOPs use measured spike rate ({overall_rate*100:.1f}%), not assumed 10%.")
+    print(f"        Loihi 2 energy based on Intel published 3 pJ/SOP figure.")
+
+    result = {
+        'model_type':             'snn',
+        'num_samples':            num_samples,
+        'num_steps':              num_steps,
+        'architecture':           f"{input_size}→{hidden_size}→{output_size}",
+        'synapses_l1':            synapses_l1,
+        'synapses_l2':            synapses_l2,
+        'total_synapses':         total_synapses,
+        'measured_spike_rate_l1': avg_rate_l1,
+        'measured_spike_rate_l2': avg_rate_l2,
+        'measured_spike_rate_overall': overall_rate,
+        'sops_l1':                sops_l1,
+        'sops_l2':                sops_l2,
+        'total_sops':             total_sops,
+        'loihi_dynamic_uJ':       dynamic_energy_uJ,
+        'loihi_static_uJ':        static_energy_uJ,
+        'loihi_total_uJ':         total_energy_uJ,
+        'loihi_daily_wh':         daily_energy_wh,
+        'avg_latency_ms':         avg_latency_ms,
+        'total_latency_ms':       total_latency_ms,
+        'per_class_spike_rates':  class_rates,
+        'timestamp':              datetime.now().isoformat(),
+    }
+
+    metrics_path = get_metrics_path(_detect_gpu_type())
+    update_metrics_file('ops_estimate', result, metrics_path)
+
+
+# ============================================================
 # Argparse entry point
 # ============================================================
 
@@ -679,6 +874,12 @@ def main():
         action='store_true',
         help='Estimate Loihi 2 inference energy from model architecture (requires saved model)',
     )
+    group.add_argument(
+        '--ops-estimate',
+        action='store_true',
+        dest='ops_estimate',
+        help='Measure real SOPs and spike rates across full dataset (requires saved model)',
+    )
 
     args = parser.parse_args()
 
@@ -688,6 +889,8 @@ def main():
         run_benchmark_gpu()
     elif args.loihi:
         run_loihi_estimate()
+    elif args.ops_estimate:
+        run_ops_estimate()
 
 
 if __name__ == "__main__":
