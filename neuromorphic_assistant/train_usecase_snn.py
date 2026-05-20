@@ -7,6 +7,7 @@ Usage:
     python train_usecase_snn.py --train          # Train and save model
     python train_usecase_snn.py --benchmark-gpu  # Measure GPU inference energy
     python train_usecase_snn.py --loihi          # Estimate Loihi 2 energy
+    python train_usecase_snn.py --ops-estimate   # Measure real SOPs
 """
 
 import argparse
@@ -43,7 +44,7 @@ except ImportError:
 MODEL_PATH = 'minios_usecase_model.pth'
 
 def _detect_gpu_type() -> str:
-    """Lightweight GPU detection — no monitor object needed."""
+    """Lightweight GPU detection - no monitor object needed."""
     if torch.cuda.is_available():
         return 'nvidia'
     try:
@@ -64,10 +65,6 @@ def get_metrics_path(gpu_type: str) -> str:
     }
     return mapping.get(gpu_type, f'usecase_training_metrics_{gpu_type}.json')
 
-
-# ============================================================
-# SNN Model
-# ============================================================
 
 class NeuromorphicActivitySNN(nn.Module):
     def __init__(self, input_size, hidden_size=64, output_size=10, beta=0.9, dropout=0.25):
@@ -101,10 +98,6 @@ class NeuromorphicActivitySNN(nn.Module):
 
         return torch.stack(spk_out_rec), mem2
 
-
-# ============================================================
-# GPU Monitor (used during --train and --benchmark-gpu)
-# ============================================================
 
 class GPUMonitor:
     def __init__(self):
@@ -145,7 +138,7 @@ class GPUMonitor:
         except ImportError:
             pass
 
-        print("No GPU found — falling back to CPU")
+        print("No GPU found - falling back to CPU")
         return 'cpu'
 
     def _get_device(self):
@@ -227,10 +220,6 @@ class GPUMonitor:
                 pass
 
 
-# ============================================================
-# Shared helpers
-# ============================================================
-
 def load_model_from_disk():
     """Load saved model. Exits with a clear message if not found."""
     try:
@@ -276,7 +265,7 @@ def update_metrics_file(key, data, metrics_path: str):
 def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
 
     print("\n" + "="*70)
-    print("NEUROMORPHIC SNN — DRIVING ASSISTANT TRAINING")
+    print("NEUROMORPHIC SNN - DRIVING ASSISTANT TRAINING")
     print("="*70)
 
     monitor = GPUMonitor()
@@ -305,7 +294,7 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
     X_tr, X_va, y_tr, y_va = train_test_split(X_tr,  y_tr,  test_size=0.222, random_state=42, stratify=y_tr)
     print(f"  Split (70-20-10):  train={len(X_tr)}  val={len(X_va)}  test={len(X_te)}")
 
-    # Normalise features — fit on train only to avoid data leakage
+    # Normalise features - fit on train only to avoid data leakage
     scaler = StandardScaler()
     X_tr = scaler.fit_transform(X_tr)
     X_va = scaler.transform(X_va)
@@ -385,7 +374,6 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
         accuracy = (epoch_correct / epoch_total) * 100
         avg_loss = epoch_loss / epoch_total
 
-        # --- validation pass ---
         model.eval()
         val_correct = val_total = 0
         val_loss_sum = 0.0
@@ -422,7 +410,6 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
         model.load_state_dict(best_model_state)
         print(f"\n  Best val weights restored  (val_acc: {best_accuracy:.1f}%)")
 
-    # --- test-set evaluation ---
     model.eval()
     test_correct = test_total = 0
     test_loader  = DataLoader(TensorDataset(X_test, y_test), batch_size=batch_size)
@@ -490,10 +477,6 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
     print(f"  python train_usecase_snn.py --loihi")
 
 
-# ============================================================
-# --benchmark-gpu
-# ============================================================
-
 def run_benchmark_gpu(num_tests=100, num_steps=30):
 
     print("\n" + "="*70)
@@ -525,7 +508,7 @@ def run_benchmark_gpu(num_tests=100, num_steps=30):
     avg_ms = float(np.mean(times))
     p95_ms = float(np.percentile(times, 95))
 
-    # Power — NVML if available, else AMD measured baseline
+    # Power - NVML if available, else AMD measured baseline
     summary      = monitor.get_summary()
     gpu_power_w  = summary.get('average_power_watts', 0.0)
     power_source = 'nvml_measured'
@@ -552,7 +535,7 @@ def run_benchmark_gpu(num_tests=100, num_steps=30):
     }
 
     print("\n" + "="*70)
-    print("RESULTS — GPU")
+    print("RESULTS - GPU")
     print("="*70)
     print(f"  Device:              {monitor.gpu_type}")
     print(f"  Avg latency:         {avg_ms:.2f} ms")
@@ -567,10 +550,6 @@ def run_benchmark_gpu(num_tests=100, num_steps=30):
 
     print(f"\nNext: python train_usecase_snn.py --loihi")
 
-
-# ============================================================
-# --loihi
-# ============================================================
 
 def run_loihi_estimate(num_steps=30, avg_spike_rate=0.1):
 
@@ -597,7 +576,7 @@ def run_loihi_estimate(num_steps=30, avg_spike_rate=0.1):
     # Full chip idle is ~30 mW but that is spread across 128 neurocores.
     # This model fits on ~1 neurocore, so static ≈ 30 mW / 128 ≈ 0.23 mW.
     # We use 0.001 W (1 mW) as a conservative single-core estimate.
-    CORE_STATIC_W = 0.001  # 1 mW — single neurocore static power
+    CORE_STATIC_W = 0.001  # 1 mW - single neurocore static power
 
     dynamic_energy_pJ = total_sops * ENERGY_PER_SOP_PJ
     dynamic_energy_uJ = dynamic_energy_pJ / 1e6  # pJ → µJ
@@ -635,7 +614,7 @@ def run_loihi_estimate(num_steps=30, avg_spike_rate=0.1):
     }
 
     print("\n" + "="*70)
-    print("RESULTS — LOIHI 2 (estimated)")
+    print("RESULTS - LOIHI 2 (estimated)")
     print("="*70)
     print(f"  Model:               {input_size} → {hidden_size} → {output_size}")
     print(f"  Timesteps:           {num_steps}")
@@ -672,10 +651,6 @@ def run_loihi_estimate(num_steps=30, avg_spike_rate=0.1):
     update_metrics_file('loihi_estimate', result, metrics_path)
 
 
-# ============================================================
-# --ops-estimate
-# ============================================================
-
 def run_ops_estimate(num_steps=30):
     """
     Run all 5,000 dataset samples through the trained SNN and measure:
@@ -686,13 +661,12 @@ def run_ops_estimate(num_steps=30):
       - Total and per-sample inference time over the full dataset
     """
     print("\n" + "="*70)
-    print("SNN OPS ESTIMATE — FULL DATASET")
+    print("SNN OPS ESTIMATE - FULL DATASET")
     print("="*70)
 
     model, checkpoint = load_model_from_disk()
     model.eval()
 
-    # ── Load and encode full dataset (same pipeline as --train) ──────────
     print(f"\nLoading dataset from {DATASET_PATH}...")
     df = pd.read_csv(DATASET_PATH)
     cat_cols = ['time_of_day', 'event_category', 'scheduled_event',
@@ -715,7 +689,6 @@ def run_ops_estimate(num_steps=30):
     synapses_l2 = hidden_size * output_size   # 64 × 23  = 1,472
     total_synapses = synapses_l1 + synapses_l2
 
-    # ── Per-sample spike counting ─────────────────────────────────────────
     spikes_l1_per_sample = []   # fraction of hidden neurons that fired
     spikes_l2_per_sample = []   # fraction of output neurons that fired
     latencies_ms         = []
@@ -729,7 +702,7 @@ def run_ops_estimate(num_steps=30):
 
             t0 = time.time()
 
-            # Forward pass — capture intermediate spikes
+            # Forward pass - capture intermediate spikes
             mem1 = model.lif1.init_leaky()
             mem2 = model.lif2.init_leaky()
             l1_spike_total = torch.zeros(hidden_size)
@@ -755,7 +728,6 @@ def run_ops_estimate(num_steps=30):
             class_name = labels[y_all[i]]
             per_class_spikes[class_name].append((rate_l1 + rate_l2) / 2)
 
-    # ── Aggregate results ─────────────────────────────────────────────────
     avg_rate_l1   = float(np.mean(spikes_l1_per_sample))
     avg_rate_l2   = float(np.mean(spikes_l2_per_sample))
     overall_rate  = (avg_rate_l1 + avg_rate_l2) / 2
@@ -784,7 +756,7 @@ def run_ops_estimate(num_steps=30):
     class_rates_sorted = sorted(class_rates.items(), key=lambda x: x[1])
 
     print("\n" + "="*70)
-    print("RESULTS — SNN OPS ESTIMATE")
+    print("RESULTS - SNN OPS ESTIMATE")
     print("="*70)
     print(f"  Architecture:           {input_size} → {hidden_size} → {output_size}")
     print(f"  Timesteps:              {num_steps}")
@@ -854,7 +826,7 @@ def run_ops_estimate(num_steps=30):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="MiniOS Neuromorphic SNN — train, benchmark GPU, or estimate Loihi energy"
+        description="MiniOS Neuromorphic SNN - train, benchmark GPU, or estimate Loihi energy"
     )
 
     group = parser.add_mutually_exclusive_group(required=True)

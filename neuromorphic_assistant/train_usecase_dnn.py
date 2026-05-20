@@ -41,7 +41,7 @@ MODEL_PATH = 'minios_usecase_dnn_model.pth'
 
 
 def _detect_gpu_type() -> str:
-    """Lightweight GPU detection — no monitor object needed."""
+    """Lightweight GPU detection - no monitor object needed."""
     if torch.cuda.is_available():
         return 'nvidia'
     try:
@@ -63,14 +63,9 @@ def get_metrics_path(gpu_type: str) -> str:
     }
     return mapping.get(gpu_type, f'usecase_training_metrics_dnn_{gpu_type}.json')
 
-
-# ============================================================
-# DNN Model
-# ============================================================
-
 class ActivityDNN(nn.Module):
     """
-    Standard feedforward DNN — same topology as the SNN (input → 64 hidden → output)
+    Standard feedforward DNN - same topology as the SNN (input → 64 hidden → output)
     but uses ReLU activations and a single dense forward pass instead of LIF spiking
     neurons over multiple timesteps.
     """
@@ -90,11 +85,6 @@ class ActivityDNN(nn.Module):
 
     def forward(self, x):
         return self.network(x)
-
-
-# ============================================================
-# GPU Monitor
-# ============================================================
 
 class GPUMonitor:
     def __init__(self):
@@ -135,7 +125,7 @@ class GPUMonitor:
         except ImportError:
             pass
 
-        print("No GPU found — falling back to CPU")
+        print("No GPU found - falling back to CPU")
         return 'cpu'
 
     def _get_device(self):
@@ -217,10 +207,6 @@ class GPUMonitor:
                 pass
 
 
-# ============================================================
-# Shared helpers
-# ============================================================
-
 def update_metrics_file(key, data, metrics_path: str):
     """Read metrics JSON, update one top-level key, write back."""
     try:
@@ -237,14 +223,10 @@ def update_metrics_file(key, data, metrics_path: str):
     print(f" Saved '{key}' to {metrics_path}")
 
 
-# ============================================================
-# --train
-# ============================================================
-
 def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
 
     print("\n" + "="*70)
-    print("DNN BASELINE — DRIVING ASSISTANT TRAINING")
+    print("DNN BASELINE - DRIVING ASSISTANT TRAINING")
     print("="*70)
 
     monitor = GPUMonitor()
@@ -253,7 +235,7 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
     df = pd.read_csv(DATASET_PATH)
     print(f"  Loaded {len(df)} rows  |  {df['suggestion_name'].nunique()} classes")
 
-    # Encode categorical columns — identical to SNN script
+    # Encode categorical columns - identical to SNN script
     cat_cols = ['time_of_day', 'event_category', 'scheduled_event',
                 'location', 'weather', 'last_media']
     for col in cat_cols:
@@ -268,12 +250,12 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
     suggestion_labels = sorted(df['suggestion_name'].unique())
     num_classes       = len(suggestion_labels)
 
-    # 70-20-10 split — same random_state as SNN for identical splits
+    # 70-20-10 split - same random_state as SNN for identical splits
     X_tr, X_te, y_tr, y_te = train_test_split(X_all, y_all, test_size=0.10, random_state=42, stratify=y_all)
     X_tr, X_va, y_tr, y_va = train_test_split(X_tr,  y_tr,  test_size=0.222, random_state=42, stratify=y_tr)
     print(f"  Split (70-20-10):  train={len(X_tr)}  val={len(X_va)}  test={len(X_te)}")
 
-    # Normalise — fit on train only
+    # Normalise - fit on train only
     scaler = StandardScaler()
     X_tr = scaler.fit_transform(X_tr)
     X_va = scaler.transform(X_va)
@@ -453,12 +435,6 @@ def run_train(num_epochs=200, hidden_size=64, batch_size=32, lr=0.001):
     print(f"  Avg inference     : {avg_inference_ms:.3f} ms")
 
 
-# ============================================================
-# Argparse entry point
-# ============================================================
-# --ops-estimate
-# ============================================================
-
 def load_dnn_from_disk():
     """Load saved DNN model. Exits with a clear message if not found."""
     try:
@@ -483,19 +459,18 @@ def load_dnn_from_disk():
 def run_ops_estimate():
     """
     Run all 5,000 dataset samples through the trained DNN and measure:
-      - MACs per inference (fixed — always input×hidden + hidden×output)
+      - MACs per inference (fixed - always input×hidden + hidden×output)
       - Total MACs across the full dataset
       - Per-sample and total inference latency
-      - MACs are the same for every input — proving always-on cost
+      - MACs are the same for every input - proving always-on cost
     """
     print("\n" + "="*70)
-    print("DNN OPS ESTIMATE — FULL DATASET")
+    print("DNN OPS ESTIMATE - FULL DATASET")
     print("="*70)
 
     model, checkpoint = load_dnn_from_disk()
     model.eval()
 
-    # ── Load and encode full dataset (same pipeline as --train) ──────────
     print(f"\nLoading dataset from {DATASET_PATH}...")
     df = pd.read_csv(DATASET_PATH)
     cat_cols = ['time_of_day', 'event_category', 'scheduled_event',
@@ -522,7 +497,6 @@ def run_ops_estimate():
     macs_per_inference = macs_l1 + macs_l2
     total_macs = macs_per_inference * num_samples
 
-    # ── Per-sample latency measurement ────────────────────────────────────
     latencies_ms = []
     print(f"\nRunning {num_samples} inference passes...")
 
@@ -536,11 +510,11 @@ def run_ops_estimate():
     avg_latency_ms   = float(np.mean(latencies_ms))
     total_latency_ms = float(np.sum(latencies_ms))
 
-    # Per-class breakdown — MACs are identical for every class (key point)
+    # Per-class breakdown - MACs are identical for every class (key point)
     per_class_macs = {label: macs_per_inference for label in labels}
 
     print("\n" + "="*70)
-    print("RESULTS — DNN OPS ESTIMATE")
+    print("RESULTS - DNN OPS ESTIMATE")
     print("="*70)
     print(f"  Architecture:           {input_size} → {hidden_size} → {output_size}")
     print(f"  Samples measured:       {num_samples:,}")
@@ -573,7 +547,7 @@ def run_ops_estimate():
         'macs_layer2':           macs_l2,
         'macs_per_inference':    macs_per_inference,
         'total_macs_dataset':    total_macs,
-        'spike_rate':            None,   # not applicable — included for compare script alignment
+        'spike_rate':            None,   # not applicable - included for compare script alignment
         'avg_latency_ms':        avg_latency_ms,
         'total_latency_ms':      total_latency_ms,
         'per_class_macs':        per_class_macs,
@@ -584,13 +558,9 @@ def run_ops_estimate():
     update_metrics_file('ops_estimate', result, metrics_path)
 
 
-# ============================================================
-# Argparse entry point
-# ============================================================
-
 def main():
     parser = argparse.ArgumentParser(
-        description="MiniOS DNN Baseline — train a standard feedforward network for SNN comparison"
+        description="MiniOS DNN Baseline - train a standard feedforward network for SNN comparison"
     )
 
     group = parser.add_mutually_exclusive_group(required=True)

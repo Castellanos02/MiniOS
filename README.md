@@ -96,7 +96,7 @@ python combine_training_metrics.py `
 python train_usecase_snn.py --train
 python train_usecase_dnn.py --train
 
-Output: SNN and DNN models saved to be used for 100 pass inference benchmark
+# Output: SNN and DNN models saved to be used for 100 pass inference benchmark
 
 # Step 2: Run inference passes
 python train_usecase_snn.py --ops-estimate
@@ -106,6 +106,29 @@ python train_usecase_dnn.py --ops-estimate
 
 ```
 ---
+
+## Loihi Estimation Comaprison Workflow
+```
+
+# Step 1: Train SNN on both the NVIDIA and AMD GPU
+
+python train_usecase_snn.py --train
+
+# Output: usecase_training_metrics_{GPU Type}.json
+
+# Step 2: Run inference passes
+python train_usecase_snn.py --benchmark-gpu
+
+# Output: The metrics are added to the following file,usecase_training_metrics_{GPU Type}.json
+
+# Step 3: Run Loihi 2 Estimation Argument
+python train_usecase_snn.py --loihi
+
+# Output: value added to usecase_training_metrics_{GPU Type}.json
+
+```
+---
+
 ## Building the OS
 
 ### Export Model to Kernel

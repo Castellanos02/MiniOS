@@ -3,7 +3,7 @@
 export_dataset_csv.py
 =====================
 Generates the 1000-row driving assistant dataset and saves it as a
-human-readable CSV file.  Only requires numpy — no torch needed.
+human-readable CSV file.  Only requires numpy - no torch needed.
 
 Usage:
     python export_dataset_csv.py
@@ -118,17 +118,17 @@ def _sample_scenario(rng):
 
 
 def _label_scenario(s):
-    dist    = s['distance_to_dest_miles']
-    gas     = s['gas_level_pct']
-    fat     = s['driver_fatigue_level']
-    spd     = s['speed_mph']
+    dist = s['distance_to_dest_miles']
+    gas = s['gas_level_pct']
+    fat = s['driver_fatigue_level']
+    spd = s['speed_mph']
     weather = s['weather']
-    brk     = s['last_break_minutes_ago']
-    trip    = s['trip_duration_minutes']
-    dest    = s['destination_type']
-    hr      = s['heart_rate_bpm']
-    tod     = s['time_of_day_enc']
-    night   = s['is_night_driving']
+    brk = s['last_break_minutes_ago']
+    trip = s['trip_duration_minutes']
+    dest = s['destination_type']
+    hr = s['heart_rate_bpm']
+    tod = s['time_of_day_enc']
+    night = s['is_night_driving']
 
     if fat >= 7.5 or (fat >= 6 and brk > 90) or (night and hr > 105):
         return 1
@@ -165,14 +165,14 @@ def generate_csv(num_samples=1000, seed=42, noise_std=NOISE_STD, output_path='dr
         label = _label_scenario(s)
 
         # Raw normalised features (before noise)
-        norm_dist  = s['distance_to_dest_miles']  / 100.0
-        norm_gas   = s['gas_level_pct']            / 100.0
-        norm_fat   = s['driver_fatigue_level']     /  10.0
-        norm_spd   = s['speed_mph']                /  90.0
-        norm_trip  = s['trip_duration_minutes']    / 180.0
-        norm_hr    = (s['heart_rate_bpm'] - 50)    /  80.0
-        norm_brk   = s['last_break_minutes_ago']   / 180.0
-        norm_tmp   = (s['outside_temp_f'] + 10)    / 120.0
+        norm_dist = s['distance_to_dest_miles']  / 100.0
+        norm_gas = s['gas_level_pct']            / 100.0
+        norm_fat = s['driver_fatigue_level']     /  10.0
+        norm_spd = s['speed_mph']                /  90.0
+        norm_trip = s['trip_duration_minutes']    / 180.0
+        norm_hr = (s['heart_rate_bpm'] - 50)    /  80.0
+        norm_brk = s['last_break_minutes_ago']   / 180.0
+        norm_tmp = (s['outside_temp_f'] + 10)    / 120.0
 
         rows.append(dict(
             # --- Human-readable columns ---

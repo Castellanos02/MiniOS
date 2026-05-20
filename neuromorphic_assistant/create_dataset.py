@@ -96,8 +96,8 @@ def generate(n, seed=42):
     np.random.seed(seed)
     rows = []
     for _ in range(n):
-        hour    = int(np.random.randint(0, 24))
-        dow     = int(np.random.randint(0, 7))
+        hour = int(np.random.randint(0, 24))
+        dow = int(np.random.randint(0, 7))
         is_wknd = int(dow >= 5)
         if hour < 6 or hour >= 22:
             cat_w = [0.05, 0.05, 0.10, 0.05, 0.75]
@@ -105,23 +105,23 @@ def generate(n, seed=42):
             cat_w = [0.05, 0.05, 0.35, 0.20, 0.35]
         else:
             cat_w = [0.25, 0.30, 0.15, 0.15, 0.15]
-        cat        = str(np.random.choice(['school','work','social','health','none'], p=cat_w))
-        event      = str(random.choice(EVENT_POOL[cat]))
+        cat = str(np.random.choice(['school','work','social','health','none'], p=cat_w))
+        event = str(random.choice(EVENT_POOL[cat]))
         time_until = int(np.random.randint(-30, 180)) if cat != 'none' else 999
-        battery    = float(round(np.clip(np.random.normal(72, 25), 5, 100), 1))
-        energy     = float(round(np.random.uniform(10, 100), 1))
-        meal_hrs   = float(round(np.clip(np.random.exponential(2.0), 0, 10), 2))
-        brk_mins   = float(round(np.random.uniform(0, 180), 1))
-        tasks      = int(np.random.randint(0, 11))
-        weather    = str(np.random.choice(WEATHERS, p=[0.55, 0.25, 0.10, 0.10]))
-        focus      = float(round(np.random.uniform(0, 100), 1))
-        fuel       = float(round(np.clip(np.random.normal(65, 25), 5, 100), 1))
-        has_email  = int(np.random.choice([0, 1], p=[0.75, 0.25]))
-        msgs_pend  = int(np.random.randint(0, 6))
+        battery = float(round(np.clip(np.random.normal(72, 25), 5, 100), 1))
+        energy = float(round(np.random.uniform(10, 100), 1))
+        meal_hrs = float(round(np.clip(np.random.exponential(2.0), 0, 10), 2))
+        brk_mins = float(round(np.random.uniform(0, 180), 1))
+        tasks = int(np.random.randint(0, 11))
+        weather = str(np.random.choice(WEATHERS, p=[0.55, 0.25, 0.10, 0.10]))
+        focus = float(round(np.random.uniform(0, 100), 1))
+        fuel = float(round(np.clip(np.random.normal(65, 25), 5, 100), 1))
+        has_email = int(np.random.choice([0, 1], p=[0.75, 0.25]))
+        msgs_pend = int(np.random.randint(0, 6))
         last_media = str(np.random.choice(MEDIA_TYPES, p=[0.40, 0.35, 0.25]))
 
-        if cat == 'school':               loc = 'school'
-        elif cat == 'work':               loc = 'work'
+        if cat == 'school': loc = 'school'
+        elif cat == 'work': loc = 'work'
         elif cat == 'health' and event == 'gym': loc = 'gym'
         elif cat == 'social' and event == 'dinner': loc = 'restaurant'
         elif cat != 'none' and time_until < 20: loc = 'commuting'

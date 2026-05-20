@@ -18,13 +18,13 @@ def load_usecase_model(model_path='minios_usecase_model.pth'):
     
     checkpoint = torch.load(model_path, map_location='cpu')
     
-    print(f"✓ Model loaded from: {model_path}")
-    print(f"  Input size: {checkpoint['input_size']}")
-    print(f"  Hidden size: {checkpoint['hidden_size']}")
-    print(f"  Output size: {checkpoint['output_size']}")
-    print(f"  Activities: {len(checkpoint['activity_labels'])}")
-    print(f"  Proactive: {checkpoint.get('proactive', False)}")
-    print(f"  Fills idle time: {checkpoint.get('fills_idle_time', False)}")
+    print(f"Model loaded from: {model_path}")
+    print(f"Input size: {checkpoint['input_size']}")
+    print(f"Hidden size: {checkpoint['hidden_size']}")
+    print(f"Output size: {checkpoint['output_size']}")
+    print(f"Activities: {len(checkpoint['activity_labels'])}")
+    print(f"Proactive: {checkpoint.get('proactive', False)}")
+    print(f"Fills idle time: {checkpoint.get('fills_idle_time', False)}")
     
     return checkpoint
 
@@ -40,9 +40,9 @@ def extract_weights(checkpoint):
     W_hidden_output = state_dict['fc2.weight'].numpy()
     b_hidden_output = state_dict['fc2.bias'].numpy()
     
-    print(f"\n✓ Weights extracted:")
-    print(f"  Input->Hidden: {W_input_hidden.shape}")
-    print(f"  Hidden->Output: {W_hidden_output.shape}")
+    print(f"\nWeights extracted:")
+    print(f"Input->Hidden: {W_input_hidden.shape}")
+    print(f"Hidden->Output: {W_hidden_output.shape}")
     
     return {
         'W_input_hidden': W_input_hidden,
@@ -301,7 +301,7 @@ static inline const char* get_snn_proactive_suggestion(
 #endif // USECASE_SNN_WEIGHTS_H
 ''')
     
-    print(f"✓ C header file generated: {output_path}")
+    print(f"C header file generated: {output_path}")
     
     return output_path
 
@@ -321,16 +321,10 @@ def main():
     generate_c_header(checkpoint, weights)
     
     print("\n" + "="*70)
-    print("✓ EXPORT COMPLETE!")
+    print("EXPORT COMPLETE!")
     print("="*70)
     print(f"\nFiles created:")
     print(f"  - ../kernel/usecase_snn_weights.h")
-    print(f"\nModel features exported:")
-    print(f"  ✓ Neuromorphic SNN (LIF neurons)")
-    print(f"  ✓ Proactive suggestions")
-    print(f"  ✓ Default preferences")
-    print(f"  ✓ Context-aware logic")
-    print(f"  ✓ {checkpoint['output_size']} activity types")
     print(f"\nNext steps:")
     print(f"  1. cd ..")
     print(f"  2. Update kernel to use usecase_snn_weights.h")
