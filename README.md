@@ -8,6 +8,8 @@ A custom bootable operating system with integrated Spiking Neural Network (SNN) 
 
 **MiniOS** is a neuromorphic AI system that uses Spiking Neural Networks (snnTorch) to provide context-aware, proactive activity suggestions in a custom CarPlay-style operating system. The system trains on GPU (NVIDIA/AMD) and deploys the trained model to a bootable OS kernel for real-time CPU inference.
 
+It also includes the creation of a Deep Neural Network model to compare the energy consumption between this model and the Spiking Neural Network model. 
+
 ### Key Features
 
 - **Neuromorphic Computing**: Leaky Integrate-and-Fire (LIF) neurons with temporal spike dynamics
@@ -54,7 +56,7 @@ sudo apt install -y build-essential nasm make qemu-system-x86 grub-pc-bin grub-c
 
 ---
 
-## Training Workflow
+## Training SNN Workflow
 
 ```anaconda prompt
 cd minios\neuromorphic_assistant
@@ -86,6 +88,24 @@ python combine_training_metrics.py `
 ```
 ---
 
+## SNN and DNN Comparison Workflow
+```
+
+# Step 1: Train SNN and DNN
+
+python train_usecase_snn.py --train
+python train_usecase_dnn.py --train
+
+Output: SNN and DNN models saved to be used for 100 pass inference benchmark
+
+# Step 2: Run inference passes
+python train_usecase_snn.py --ops-estimate
+python train_usecase_dnn.py --ops-estimate
+
+# Output: The metrics are added to the following file, usecase_training_metrics_{GPU Type}.json
+
+```
+---
 ## Building the OS
 
 ### Export Model to Kernel
