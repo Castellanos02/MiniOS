@@ -21,11 +21,11 @@ A custom bootable operating system with integrated Spiking Neural Network (SNN) 
 
 ### Prerequisites
 
-- **Windows 10/11** (for AMD GPU support with DirectML)
+- **Windows 10/11**
 - **Python 3.8+**
-- **QEMU** or **VirtualBox**
+- **QEMU**
 - **Build tools**: GCC, NASM, ld, mkisofs
-- **GPU** (optional but recommended): NVIDIA or AMD
+- **GPU** (optional): NVIDIA or AMD
 
 ### Installation
 
@@ -135,124 +135,6 @@ make run-carplay
 1. Press **Enter** to open Calendar
 2. Press **A** to add AI suggestion
 3. Watch neuromorphic SNN suggest activities!
-
-### Proactive Behavior
-
-The system automatically checks every 30 minutes (at :00 and :30) for idle calendar time:
-- If ≥30 minutes free → adds AI suggestion
-- Context-aware: considers time, energy, day of week
-- Anti-repetition: tracks last 3 suggestions for variety
-
----
-
-## Metrics Collected
-
-### All 8 Required Metrics
-
-| # | Metric | Source | NVIDIA | AMD |
-|---|--------|--------|--------|-----|
-| 1 | **Accuracy** | Training loop | Real | Real |
-| 2 | **RAM** | psutil | Real | Real |
-| 3 | **GPU Allocated** | PyTorch CUDA | Real | Real (HWiNFO64) |
-| 4 | **GPU Reserved** | PyTorch CUDA | Real | Real (HWiNFO64) |
-| 5 | **Power** | NVML / HWiNFO64 | Est. | Real (HWiNFO64) |
-| 6 | **Energy** | Calculated | Est. | Real (HWiNFO64) |
-| 7 | **Time** | time.time() | Real | Real |
-| 8 | **Inference** | 100 tests | Real | Real |
-
----
-
-## Project Structure
-
-```
-minios/
-├── kernel/
-│   ├── kernel_carplay.c          # Main OS kernel with AI integration
-│   ├── usecase_snn_weights.h     # Exported SNN weights (generated)
-│   ├── multiboot_header.asm      # GRUB multiboot header
-│   ├── kernel_entry.asm          # Kernel entry point
-│   └── linker_multiboot.ld       # Linker script
-├── neuromorphic_assistant/
-│   ├── train_usecase_snn.py      # Main training script (GPU)
-│   ├── export_usecase_to_minios.py  # Export model to C
-│   ├── combine_training_metrics.py  # Combine with HWiNFO64
-│   ├── use_case_data.py          # Training data generator
-│   └── check_gpu.py              # GPU diagnostics
-├── Makefile                      # Build system
-└── README.md                     # This file
-```
-
----
-
-## Neuromorphic Architecture
-
-### Network Structure
-
-```
-Input Layer:   10 features (hour, minute, day, energy, engagement, etc.)
-Hidden Layer:  64 LIF neurons (beta=0.9, membrane dynamics)
-Output Layer:  20 LIF neurons (activity types)
-Timesteps:     20 (spike-based temporal processing)
-```
-
-### Activities (20 Types)
-
-**Idle Time Filling (0-11)**:
-- quick_rest, stretch_break, quick_task, workout, lunch_break
-- creative_work, light_activity, deep_work, productive_project
-- relax, hobby_time, flexible_activity
-
-**Meeting Context (12-14)**:
-- prepare_for_meeting, review_notes, stay_ready
-
-**General (15-19)**:
-- check_in, music_suggestion, podcast_suggestion
-- route_suggestion, social_suggestion
-
-### Learning Algorithm
-
-- **Framework**: snnTorch (PyTorch-based)
-- **Neuron Model**: Leaky Integrate-and-Fire (LIF)
-- **Training**: Surrogate gradient descent
-- **Loss**: Spike count cross-entropy
-- **Optimizer**: Adam (lr=0.001)
-
----
-
-
-## Technical Details
-
-### Training Hyperparameters
-
-```python
-num_epochs = 20
-batch_size = 1 (online learning)
-hidden_size = 64
-num_timesteps = 20
-beta = 0.9 (membrane leak)
-learning_rate = 0.001
-```
-
-### Inference Process
-
-1. Extract 10 context features from current state
-2. Forward pass through 64 LIF neurons (hidden layer)
-3. Spike accumulation over 20 timesteps
-4. Winner-take-all: activity with most output spikes
-5. Return suggestion in 20-25ms
-
-### OS Integration
-
-1. Train SNN on GPU → PyTorch model (.pth)
-2. Export weights → C header file (.h)
-3. Compile into kernel → Bootable ISO (.iso)
-4. Run inference on CPU → Real-time suggestions
-
----
-
-## Project Description
-
-This project implements a neuromorphic Spiking Neural Network (SNN) using Leaky Integrate-and-Fire neurons for proactive activity suggestion in a custom operating system. The system trains on GPU (NVIDIA/AMD) using snnTorch, achieving 89-91% accuracy on context-aware recommendations, then deploys the model weights to a bootable OS kernel for real-time CPU inference. The neuromorphic architecture demonstrates energy-efficient edge computing through spike-based temporal processing, collecting comprehensive metrics including power consumption (0.026 Wh), inference latency (8-24ms), and learning dynamics across both training and deployment phases.
 
 ---
 
